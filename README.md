@@ -2,6 +2,6 @@
 
 For coding standards, please refer to our [Python Style Guide](StyleGuide.md).
 
-# : Nadia Alam
+# nalam309: Nadia Alam
 # xaviermkim: Xavier Kim
 # julimota1224: Julissa Mota
