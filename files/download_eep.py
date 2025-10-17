@@ -3,10 +3,17 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
 
-# location of chromedriver
-s = Service("/usr/local/bin/chromedriver")
+def make_driver():
+    """Create a Chrome WebDriver using Selenium Manager (auto-handles driver setup)."""
+    options = Options()
+    options.add_argument("--headless=new") 
+    driver = webdriver.Chrome(options=options)
+    driver.set_window_size(1400,1000)
+    return driver
+
+
 def download_eep():
     '''
     downloads appropriate evolutionary track file as specified by the user
@@ -59,22 +66,13 @@ def download_eep():
         array = [69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84]
         xpath_index = int(array[user_input2-1])
 
-    if user_input1 == "A" and xpath_index < 69:
-
-        # xpaths are up from 54 to 68 inclusive for 0.40 0.40 v/vcrit
-        driver = webdriver.Chrome(service=s)
-        driver.get("http://waps.cfa.harvard.edu/MIST/model_grids.html")
-        driver.maximize_window()
-        driver.find_element_by_xpath('//*[@id="content"]/article/p['+str(xpath_index)+']/a').click()
-
-    elif user_input1 == "B" and xpath_index >= 69:
-
-        #xpath is from 69 to 83 inclusive for 0.00 v/vcrit
-        driver = webdriver.Chrome(service=s)
-        driver.get("http://waps.cfa.harvard.edu/MIST/model_grids.html")
-        driver.maximize_window()
-        driver.find_element_by_xpath('//*[@id="content"]/article/p['+str(xpath_index)+']/a').click()
-
-
-
-
+# driver flow control
+    driver = make_driver()
+    try: 
+            driver.get("http://waps.cfa.harvard.edu/MIST/model_grids.html")
+            driver.set_window_size(1400,1000)
+            driver.find_element(By.XPATH, f'//*[@id="content"]/article/p[{xpath_index}]/a').click()
+            print ("Link clicked; check your downloads folder/browser for the file.")
+        
+    finally:
+            driver.quit()
