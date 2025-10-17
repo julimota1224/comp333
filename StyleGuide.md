@@ -88,7 +88,48 @@ API_URL = "https://insertapihere.com"
     - Work on different parts of the codebase independently as changing a single class/module won't affect the others
     - Locate bugs easily because classes/modules are organized by relatedness
 
-## 4. Additional Resources
+## 4. Branching Norms
+
+### Naming
+- Use lowercase characters, numerals, and hyphens to create descriptive names for each branch
+- Use prefix convention that describe the purpose of each branch
+- Prefix tokens:
+    - feature/ for new features
+    - hotfix/ for high-priority fixes
+    - bugfix/ for non-critical bug fixes and experimentation
+    - docs/ for any changes in documentation
+- Include an issue ID to track history
+- Some examples:
+    - `feature/ 1-data-import`
+    - `feature/ 77-graph-visualization`
+    - `bugfix/ 24-fix-unit-test`
+
+### Workflow Guidelines
+1. Create a branch from the latest version of `main`
+2. Keep branches focused and short-lived: maximum of 2 weeks
+3. Make regular commits and sync regularly with `main` to avoid conflicts
+4. Push changes to the remote repository
+
+### Merge Conditions
+1. At least one team member must review and approve the merge request
+2. Testing requirements:
+    - Verify that all unit tests pass
+    - Include appropriate unit tests for any new features
+    - Verify the feature works as intended
+3. Coding Standards:
+    - Follows all style guidelines in this document
+    - Ample documentation using docstrings and comments
+    - No merge conflicts with `main`
+4. Update relevant documentation such as `README` if the changes affect user-facing functionality
+
+### Merge Process
+1. Create a pull request from your feature branch to `main`
+2. Request review from at least one team member
+3. Address any feedback or requested changes
+4. Once approved and all conditions are met, the reviewer may merge
+5. Delete the feature branch after successful merge
+
+## 5. Additional Resources
 
 ### Core Python Standards
 - [PEP 8 - Style Guide for Python Code](https://pep8.org/)
