@@ -47,20 +47,22 @@ The program is capable of:
 
 
 
+Option Exploration: 
+
 Option 1: Downloading evolutionary track files
-**After following the initial installation steps
+*After following the initial installation steps
     1.  Type 1  and press Enter.
-    2. Follow on-screen prompts: Which evolutionary track do you wish to download,  and the index for what Fe/H you would like?
+    2. Follow on-screen prompts: Which evolutionary track do you wish to download,       and the index for what Fe/H you would like?
     3. When the download is completed, a message will be printed that states the following: "Link clicked; check your downloads folder/browser for the file
 
 Option 2: Downloading isochorone files
-**After following the initial installation steps
+*After following the initial installation steps
     1. Type 2 and press Enter.
     2. Follow on-screen prompts: Which Isochrone track would you like to download?
     3. When the download is completed, a message will be printed that states that "Isochrone link clicked; check your browser/downloads settings. 
 
 Option 3: Inputting data for evolutionary track curves
-**After following the initial installation steps
+*After following the initial installation steps
     1. Type 3 and press Enter
     2. Follow on-screen prompts; Enter the absolute path to your downloaded evolutionary track file, input the minimum eep mass curve you want to highlight, and input the maximum eep mass curve you want to highlight
     3. Once the program verifies the dummy plot (no real file path is required), a  plot will appear. 
