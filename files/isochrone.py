@@ -1,3 +1,42 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+def plt_iso():
+    """
+    Skeletal function to demonstrate isochrone plotting.
+    """
+
+    print("Enter absolute path to the downloaded Isochrone files (must be .txz):")
+    path = input("> ")
+    print(f"Using dummy file at: {path}")
+
+    print("\n1. [Fe/H] = -4.00\t2. [Fe/H] = -3.50\t3. [Fe/H] = -3.00")
+    print("4. [Fe/H] = -2.50\t5. [Fe/H] = -2.00\t6. [Fe/H] = -1.75")
+    print("7. [Fe/H] = -1.50\t8. [Fe/H] = -1.25\t9. [Fe/H] = -1.00")
+    print("10. [Fe/H] = -0.75\t11. [Fe/H] = -0.50\t12. [Fe/H] = -0.25")
+    print("13. [Fe/H] = 0.00\t14. [Fe/H] = +0.25\t15. [Fe/H] = +0.50")
+
+    user_metallicity = input("\nSelect a metallicity index (1–15): ")
+
+    print(f"\nGenerating dummy isochrone plot for metallicity option {user_metallicity}...")
+
+    # --- Make a simple fake isochrone curve ---
+    x = np.linspace(3.9, 3.5, 120)      # log(Teff)
+    y = np.exp(-3 * (x - 3.7)**2) + 0.5 # fake log(L)
+
+    plt.plot(x, y, 'b-', label=f"[Fe/H] index {user_metallicity}")
+    plt.xlabel("log(Teff)")
+    plt.ylabel("log(Luminosity)")
+    plt.legend()
+    plt.title("Dummy Isochrone Curve")
+    plt.gca().invert_xaxis()
+    plt.show()
+
+    print("\nDone! (This is a dummy demonstration.)")
+
+
+
+"""
 from astropy.io import ascii
 import numpy as np
 import matplotlib.pyplot as plt
@@ -10,9 +49,8 @@ from fastnumbers import isfloat
 
 def plt_iso():
 
-    """
-    uses iso files from download_UBVRI.py to create curves of constant mass and varying age
-    """
+    #uses iso files from download_UBVRI.py to create curves of constant mass and varying age
+    
    
     iso_file = input("Enter absolute path to the downloaded Isochrone files (must be .txz): ")
     while os.path.exists(iso_file) != True:
@@ -128,3 +166,4 @@ def plt_iso():
     
     return 
 
+"""
