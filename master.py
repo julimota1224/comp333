@@ -6,9 +6,6 @@ from fastnumbers import isint, isfloat
 import matplotlib.pyplot as plt
 import os
 
-
-# /Users/joshuagrajales/Downloads/MIST_v1.2_feh_p0.00_afe_p0.0_vvcrit0.0_EEPS.txz
-# /Users/joshuagrajales/Desktop/astrre/final_plot
 def run():
 
     ''' cwd = input("Enter absolute path to current working directory : ")
@@ -47,7 +44,6 @@ def run():
             print("6. Quit")
             decision = input("Enter a digit with the task associated above. ")
         elif int(decision) == 3:
-            # /Users/joshuagrajales/Downloads/MIST_v1.2_feh_m0.50_afe_p0.0_vvcrit0.4_EEPS.txz
             plot_eep()
             print("1. Download evolutionary track files")
             print("2. Download ischorone files")
@@ -57,7 +53,6 @@ def run():
             print("6. Quit")
             decision = input("Enter a digit with the task associated above. ")
         elif int(decision) == 4:
-            # /Users/joshuagrajales/Downloads/MIST_v1.2_vvcrit0.4_UBVRIplus.txz
             plt_iso()
             print("1. Download evolutionary track files")
             print("2. Download ischorone files")
