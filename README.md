@@ -25,9 +25,11 @@ The program is capable of:
 ## User Guide
     1. Open a terminal and clone this repository.
     
-    2. Install all required packages: numpy, matplotlib, astropy, fastnumbers, selenum. You can do this by running in your terminal in bash the following command: "pip install numpy matplotlib astropy fastnumbers selenium"
+    2. Install all required packages: numpy, matplotlib, astropy, fastnumbers, selenum. 
+    You can do this by running in your terminal in bash the following command: "pip install numpy matplotlib astropy fastnumbers selenium"
     
-    3. Verify chrome installation by running the following command in the terminal "googlechrome --version" or for macOS run the following command in the terminal "/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --version"
+    3. Verify chrome installation by running the following command in the terminal "googlechrome --version" 
+    or for macOS run the following command in the terminal "/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --version"
     
     4. To start the program, ensure you are in the correct directory. Then run the following command "python3 master.py"
     
@@ -47,38 +49,46 @@ The program is capable of:
     Option 5: Creates a combined plot of both data sets
     Option 6: Exits the program
 
-    * It should be noted that in this skeletal version of the code, no real data or files are required. When the program asks for an absolute path (i.e in option 3 or 4). Entering any valid path (e.g., /Users/test/dummy.txz) will allow the code to run through the program and sufficiently show you an example of a graph.
+    * It should be noted that in this skeletal version of the code, no real data or files are required.
+    When the program asks for an absolute path (i.e in option 3 or 4). Entering any valid path (e.g., /Users/test/dummy.txz) 
+    will allow the code to run through the program and sufficiently show you an example of a graph.
 
     Option Exploration:
     Option 1: Downloading evolutionary track files
     *After following the initial installation steps
     1.  Type 1  and press Enter.
-    2. Follow on-screen prompts: Which evolutionary track do you wish to download,       and the index for what Fe/H you would like?
-    3. When the download is completed, a message will be printed that states the following: "Link clicked; check your downloads folder/browser for the file
+    2. Follow on-screen prompts: Which evolutionary track do you wish to download,       
+    and the index for what Fe/H you would like?
+    3. When the download is completed, a message will be printed that states the 
+    following: "Link clicked; check your downloads folder/browser for the file
     
     Option 2: Downloading isochorone files
     *After following the initial installation steps
     1. Type 2 and press Enter.
     2. Follow on-screen prompts: Which Isochrone track would you like to download?
-    3. When the download is completed, a message will be printed that states that "Isochrone link clicked; check your browser/downloads settings. 
+    3. When the download is completed, a message will be printed that states that
+    "Isochrone link clicked; check your browser/downloads settings. 
     
     Option 3: Inputting data for evolutionary track curves
     *After following the initial installation steps
     1. Type 3 and press Enter
-    2. Follow on-screen prompts; Enter the absolute path to your downloaded evolutionary track file, input the minimum eep mass curve you want to highlight, and input the maximum eep mass curve you want to highlight
+    2. Follow on-screen prompts; Enter the absolute path to your downloaded evolutionary track file, 
+    input the minimum eep mass curve you want to highlight, and input the maximum eep mass curve you want to highlight
     3. Once the program verifies the dummy plot (no real file path is required), a  plot will appear.
     
     Option 4: Inputting data for isochrone curves
     *After following the initial installation steps
     1. Type 4 and press enter
-    2. Follow the onscreen prompts: Choose a metallicity value [Fe/H]) from a numbered list (1–15), enter minimum age, maximum age, minimum mass, maximum mass.
+    2. Follow the onscreen prompts: Choose a metallicity value [Fe/H]) from a numbered list (1–15), 
+    enter minimum age, maximum age, minimum mass, maximum mass.
     3. A  plot will appear. 
     
     Option 5: Plotting all data
     *After following the initial installation steps
     1. Type 5 and press Enter
     2. The program will simulate combining the previously entered evolutionary track and isochrone data. 
-    3. Follow on-screen prompts: Effective temperature, the error for effective     temperature, biometric luminosity of the star, the error for biometric luminosity, name for the point, graph title, x label, y label. 
+    3. Follow on-screen prompts: Effective temperature, the error for effective     temperature, biometric 
+    luminosity of the star, the error for biometric luminosity, name for the point, graph title, x label, y label. 
     3. A plot will appear. 
 
 
