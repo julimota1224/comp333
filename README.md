@@ -20,19 +20,17 @@ The program is capable of:
 - Run a dummy demonstration of the data
 - Guide users through each step interactively using a terminal-line menu. 
 
-
-
 ## User Guide
-    1. Open a terminal and clone this repository.
+    1. Clone the Repository: Clone the main repository to your local machine. Open up VS Code, click on "Clone Git Repository", and enter the repository's URL. 
     
-    2. Install all required packages: numpy, matplotlib, astropy, fastnumbers, selenum. 
-    You can do this by running in your terminal in bash the following command: "pip install numpy matplotlib astropy fastnumbers selenium"
+    2. Install all required packages: matplotlib, astropy, fastnumbers. 
+    You can do this by running in your terminal in bash the following command: "pip install matplotlib astropy fastnumbers"
     
-    3. Verify chrome installation by running the following command in the terminal "googlechrome --version" 
-    or for macOS run the following command in the terminal "/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --version"
-    
-    4. To start the program, ensure you are in the correct directory. Then run the following command "python3 master.py"
-    
+    3. Run the Script: Once you are on the Feature-1 branch, run the program by entering:
+    python3 master.py
+    You can now use the package as usual, testing Option 1 (EEPS) and Option 2 (Isochrone) downloads. You should notice the files are downloaded much faster and the new menus automatically construct the correct file
+    names.
+        
     You will see the following menu:
     1. Download evolutionary track files
     2. Download isochrone files
