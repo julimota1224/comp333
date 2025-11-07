@@ -111,9 +111,16 @@ The program is capable of:
     Option 6: Quit
     Ends the program 
 
+## Testing
 
+This is a living document explaining how to run unit tests. More unit tests will be added as the project develops.
 
+### Running Unit Tests
 
+The project has two test files:
+- `test_make_driver.py` - Tests the WebDriver creation function
+- `test_xpath_function.py` - Tests the XPath index calculation logic
 
-    
-
+Run individual test files in terminal:
+- python3 test_make_driver.py
+- python3 test_xpath_function.py
