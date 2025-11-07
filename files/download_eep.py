@@ -13,6 +13,42 @@ def make_driver():
     driver.set_window_size(1400,1000)
     return driver
 
+def test_xpath_index(vcrit_choice, metallicity_index):
+    """Helper function to test calculation of XPath index.
+    
+    Arguments:
+        vcrit_choice: 'A' or 'B' (v/vcrit value)
+        metallicity_index: int from 1-15 for A, 1-16 for B ([Fe/H] selection)
+    
+    Returns:
+        int: XPath index for the download link
+    
+    Raises:
+        ValueError: if inputs are invalid
+    """
+    # Validate vcrit_choice first
+    if vcrit_choice not in ('A', 'B'):
+        raise ValueError(f"vcrit_choice must be 'A' or 'B', got {vcrit_choice}")
+    
+    # Validate metallicity_index type
+    if not isinstance(metallicity_index, int):
+        raise ValueError(f"metallicity_index must be an integer, got {type(metallicity_index).__name__}")
+    
+    # Validate metallicity_index is positive
+    if metallicity_index < 1:
+        raise ValueError(f"metallicity_index must be at least 1, got {metallicity_index}")
+    
+    # Get the appropriate array and validate range
+    if vcrit_choice == "A":
+        array = [54,55,56,57,58,59,60,61,62,63,64,65,66,67,68]
+        if metallicity_index > 15:
+            raise ValueError(f"metallicity_index for vcrit 'A' must be 1-15, got {metallicity_index}")
+    else:  # vcrit_choice == "B"
+        array = [69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84]
+        if metallicity_index > 16:
+            raise ValueError(f"metallicity_index for vcrit 'B' must be 1-16, got {metallicity_index}")
+    
+    return int(array[metallicity_index - 1])
 
 def download_eep():
     '''
