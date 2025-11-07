@@ -122,5 +122,5 @@ The project has two test files:
 - `test_xpath_function.py` - Tests the XPath index calculation logic
 
 Run individual test files in terminal:
-- python3 test_make_driver.py
-- python3 test_xpath_function.py
+- `python3 test_make_driver.py`
+- `python3 test_xpath_function.py`
