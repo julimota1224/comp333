@@ -66,6 +66,25 @@ def download_eep():
         array = [69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84]
         xpath_index = int(array[user_input2-1])
 
+def calculate_xpath_index(vcrit_choice, metallicity_index):
+    """Helper function to test calculation of XPath index.
+    
+    Arguments:
+        vcrit_choice: 'A' or 'B' (v/vcrit value)
+        metallicity_index: int from 1-15 ([Fe/H] selection)
+    
+    Returns:
+        int: XPath index for the download link
+    """
+    if vcrit_choice == "A":
+        array = [54,55,56,57,58,59,60,61,62,63,64,65,66,67,68]
+    elif vcrit_choice == "B":
+        array = [69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84]
+    else:
+        raise ValueError(f"vcrit_choice must be 'A' or 'B', got {vcrit_choice}")
+    
+    return int(array[metallicity_index - 1])
+
 # driver flow control
     driver = make_driver()
     try: 
