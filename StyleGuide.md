@@ -100,9 +100,9 @@ API_URL = "https://insertapihere.com"
     - docs/ for any changes in documentation
 - Include an issue ID to track history
 - Some examples:
-    - `feature/ 1-data-import`
-    - `feature/ 77-graph-visualization`
-    - `bugfix/ 24-fix-unit-test`
+    - `feature/1-data-import`
+    - `feature/77-graph-visualization`
+    - `bugfix/24-fix-unit-test`
 
 ### Workflow Guidelines
 1. Create a branch from the latest version of `main`
