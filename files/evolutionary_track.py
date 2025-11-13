@@ -1,76 +1,26 @@
-
-import matplotlib.pyplot as plt
-import numpy as np
-
-def plot_eep():
-    """
-    Skeletal function to demonstrate evolutionary track plotting as we try to work on full implementation.
-    """
-    print("Enter absolute path to the downloaded Evolutionary Track files (must be .txz):")
-    path = input("> ")
-    print(f"Using dummy file at: {path}")
-
-    # pretend we loaded and processed data
-    print("Extracting and reading files ...")
-    print("Found 3 stellar tracks (00100, 00150, 00200).")
-
-    print("\nPlease input the MINIMUM eep mass curve you want to highlight (e.g. 00100):")
-    min_mass = input("> ")
-
-    print("Please input the MAXIMUM eep mass curve you want to highlight (e.g. 00200):")
-    max_mass = input("> ")
-
-    print(f"\nPlotting dummy evolutionary tracks for {min_mass}–{max_mass} solar masses...")
-
-    # Fake data !
-    x = np.linspace(3.9, 3.6, 100)
-    y1 = np.sin(5 * x) * 0.1 + 1
-    y2 = np.cos(5 * x) * 0.1 + 1.2
-
-    plt.plot(x, y1, label=f"{min_mass} track")
-    plt.plot(x, y2, label=f"{max_mass} track")
-    plt.fill_between(x, y1, y2, color='yellow', alpha=0.3)
-
-    plt.xlabel("log(Teff)")
-    plt.ylabel("log(Luminosity)")
-    plt.legend()
-    plt.gca().invert_xaxis()
-    plt.title("Dummy Evolutionary Track Plot")
-    plt.show()
-
-    print("\nDone! (This was only a dummy demonstration.)")
-
-
-
-"""
 import os
 import math as m 
 import numpy as np
 import matplotlib.pyplot as plt
 from fastnumbers import isfloat
 from astropy.io import ascii
-import tarfile
     
 def plot_eep(): 
-        # Get absolute path to downloaded folder
-    eep_file = input("Enter absolute path to the downloaded Evolutionary Track files (must be .txz): ").strip().strip("'").strip('"')
-    eep_file = os.path.expanduser(eep_file)  
-    while not (os.path.isfile(eep_file) and eep_file.lower().endswith(".txz")):
-        eep_file = input("Not a valid file path. Enter absolute path to the downloaded Evolutionary Track files (must be .txz): ").strip().strip("'").strip('"')
-        eep_file = os.path.expanduser(eep_file)
+        
+    eep_file = input("Enter absolute path to the downloaded Evolutionary Track files (must be .txz): ")
+    while os.path.exists(eep_file) != True:
+        eep_file = input("Not a valid file path. Enter absolute path to the downloaded Evolutionary Track files (must be .txz): ")
+        
+            
 
-    archive_dir = os.path.dirname(eep_file) or os.getcwd()
-    with tarfile.open(eep_file, mode="r:xz") as tf:
-        top_levels = {m.name.split("/")[0] for m in tf.getmembers() if m.name and not m.name.startswith("./")}
-        top_levels.discard("")
-        if not top_levels:
-            raise RuntimeError("Archive appears empty or has no top-level directory.")
-        root_dir = sorted(top_levels)[0]
-        tf.extractall(path=archive_dir)
+    #untar the file and store needed files in current_directory 
+    os.system("tar -xvf " + eep_file)
 
-    # Build the absolute path to the extracted folder
-    path = os.path.join(archive_dir, root_dir)
-
+    #difference between a tar and untar file is the .tkz
+    untar_iso_path = eep_file[:-4]
+    path = untar_iso_path[-43:]
+    # Insert the directory path in here
+    
     # Extracting all the contents in the directory corresponding to path
     l_files = os.listdir(path)
     
@@ -106,7 +56,7 @@ def plot_eep():
     # if min_interp_dec is in the array of files then no need to interpolate just use existing data
     if min_interp_dec in file_ints_str:
         
-        dataminlow  = ascii.read(os.path.join(path, f"{min_interp_dec}M.track.eep"))
+        dataminlow = ascii.read(path+'/'+min_interp_dec+"M.track.eep")
 
         logt1 = np.array(dataminlow['col12'])
         logl1 = np.array(dataminlow['col7'])
@@ -174,7 +124,7 @@ def plot_eep():
                
         print("Max-low file selected is: " + min_max + "M.track.eep, your input was " + min_interp_dec +".")
 
-        datamaxlow = ascii.read(os.path.join(path, f"{min_max}M.track.eep"))
+        datamaxlow = ascii.read(path+'/'+min_max + "M.track.eep")
 
         logt1 = np.array(datamaxlow['col12'])
         logl1 = np.array(datamaxlow['col7'])
@@ -246,7 +196,7 @@ def plot_eep():
         
         print("Min-high file selected is: " + max_interp_dec + "M.track.eep, your input was " + max_interp_dec +".")
 
-        dataminhigh = ascii.read(os.path.join(path, f"{max_interp_dec}M.track.eep"))
+        dataminhigh = ascii.read(path+'/' + max_interp_dec+"M.track.eep")
 
         logt1 = np.array(dataminhigh['col12'])
         logl1 = np.array(dataminhigh['col7'])
@@ -276,7 +226,7 @@ def plot_eep():
         # isolate min file for HIGH INTERP
         print("Min-high file selected is: " + max_min + "M.track.eep, your input was " + max_interp_dec +".")
 
-        dataminhigh = ascii.read(os.path.join(path, f"{max_min}M.track.eep"))
+        dataminhigh = ascii.read(path+'/' + max_min+"M.track.eep")
 
         logt1 = np.array(dataminhigh['col12'])
         logl1 = np.array(dataminhigh['col7'])
@@ -294,7 +244,7 @@ def plot_eep():
 
         print("Max-high file selected is: " + max_max + "M.track.eep, yourr input was " + max_interp_dec +".")
 
-        datamaxhigh = ascii.read(os.path.join(path, f"{max_max}M.track.eep"))
+        datamaxhigh = ascii.read(path+'/' + max_max+"M.track.eep")
 
         logt1 = np.array(datamaxhigh['col12'])
         logl1 = np.array(datamaxhigh['col7'])
@@ -361,4 +311,4 @@ def plot_eep():
         
     return 
     
-"""
+
