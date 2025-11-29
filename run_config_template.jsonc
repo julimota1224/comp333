@@ -1,0 +1,74 @@
+{
+  // ------------------------------------------------------------------
+  // 1. EEP TRACK DOWNLOAD SETTINGS
+  // ------------------------------------------------------------------
+  "eep_download": {
+    "run": true,              // Set to true → download the EEP evolutionary tracks
+    "vcrit": "A",             // Rotation choice: A = 0.0, B = 0.4, C = 0.2 (depends on your code)
+    "feh_index": 13           // Metallicity index (0–something) from the MIST grid
+  },
+
+  // ------------------------------------------------------------------
+  // 2. ISOCHRONE DOWNLOAD SETTINGS
+  // ------------------------------------------------------------------
+  "iso_download": {
+    "run": true,              // Set to true → download isochrone grid
+    "vcrit": "B"              // Rotation choice for isochrones
+  },
+
+  // ------------------------------------------------------------------
+  // 3. EEP PLOT SETTINGS (automatic, no user interaction needed)
+  // ------------------------------------------------------------------
+  "eep_plot": {
+    "run": true               // Plot the EEP mass tracks
+  },
+
+  // These settings control the highlighted mass interpolation region
+  "eep_plot_settings": {
+    "min_mass_code": "00100",   // 1.00 M⊙ → enter as 5 digits (00100)
+    "max_mass_code": "00500",   // 5.00 M⊙ → 00500
+    "age_min": 1e6,             // Minimum age (years) to highlight
+    "age_max": 3e7,             // Maximum age (years) to highlight
+    "label_lower": "1.00 M⊙",   // Label for lower-mass curve
+    "label_upper": "5.00 M⊙",   // Label for upper-mass curve
+    "fill_between": true        // Shade region between curves
+  },
+
+  // ------------------------------------------------------------------
+  // 4. ISOCHRONE PLOT SETTINGS
+  // ------------------------------------------------------------------
+  "iso_plot": {
+    "run": true,                                 // Plot isochrones
+    "iso_directory": "/Users/USERNAME/MIST_Data/MIST_v1.2_vvcrit0.0_UBVRIplus"
+                                                  // Location of extracted .iso.cmd files
+  },
+
+  "plot_settings": {
+    "title": "HR Diagram with MIST Tracks",
+    "xlabel": "log(T_eff)",
+    "ylabel": "log(L)",
+    "invert_xaxis": true,       // HR diagrams always have Teff decreasing to the right
+    "age": 9.0                  // Choose log10(age/yr) of isochrone to plot (e.g., 9.0 = 1e9 years)
+  },
+
+  // ------------------------------------------------------------------
+  // 5. USER PLOTTED POINTS (OPTIONAL)
+  //    Add stars with uncertainties to overlay on the HR diagram.
+  // ------------------------------------------------------------------
+  "points": [
+    {
+      "name": "Star 1",
+      "x": 3.75,               // log(T_eff)
+      "x_err": 0.05,           // error in log(T_eff)
+      "y": 1.20,               // log(L)
+      "y_err": 0.10            // error in log(L)
+    },
+    {
+      "name": "Star 2",
+      "x": 3.65,
+      "x_err": 0.03,
+      "y": 0.95,
+      "y_err": 0.08
+    }
+  ]
+}

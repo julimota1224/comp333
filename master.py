@@ -1,114 +1,102 @@
-from files.download_eep import download_eep
-from files.download_iso import download_isochrone
-from files.isochrone import plt_iso
-from files.evolutionary_track import plot_eep 
-from fastnumbers import isint, isfloat
+import json
+import sys
 import matplotlib.pyplot as plt
-import os
 
-def run():
-
-    ''' cwd = input("Enter absolute path to current working directory : ")
-    while os.path.exists(cwd) != True:
-        cwd = input("Not a valid directroy. Enter absolute path to current working directory : ")
-    '''
+from comp333.files.config_utils import load_config, ensure_config_dir_exists
+from comp333.files.download_eep import download_eep
+from comp333.files.download_iso import download_isochrone
+from comp333.files.isochrone import plt_iso
+from comp333.files.evolutionary_track import plot_eep
 
 
-    print("1. Download evolutionary track files")
-    print("2. Download ischorone files")
-    print("3. Input data for evolutionary track curves ")
-    print("4. Input data for isochrone curves")
-    print("5. Plot all")
-    print("6. Quit")
+# =====================================================================
+# Run everything from run_config.json
+# =====================================================================
+def run_from_config(config):
+    """
+    Executes all tasks defined in run_config.json.
 
-    decision = input("Enter a digit with the task associated above. ")
-    while decision != '6':
-        if isint(decision) != True or int(decision) > 6 or int(decision) < 1:
-            decision = int(input("Not a valid input. Please enter a digit with the task associated above. "))
-        elif int(decision) == 1:
-            download_eep()
-            print("1. Download evolutionary track files")
-            print("2. Download ischorone files")
-            print("3. Input data for evolutionary track curves ")
-            print("4. Input data for isochrone curves")
-            print("5. Plot all")
-            print("6. Quit")
-            decision = input("Enter a digit with the task associated above. ")
-        elif int(decision) == 2:
-            download_isochrone()
-            print("1. Download evolutionary track files")
-            print("2. Download ischorone files")
-            print("3. Input data for evolutionary track curves ")
-            print("4. Input data for isochrone curves")
-            print("5. Plot all")
-            print("6. Quit")
-            decision = input("Enter a digit with the task associated above. ")
-        elif int(decision) == 3:
-            plot_eep()
-            print("1. Download evolutionary track files")
-            print("2. Download ischorone files")
-            print("3. Input data for evolutionary track curves ")
-            print("4. Input data for isochrone curves")
-            print("5. Plot all")
-            print("6. Quit")
-            decision = input("Enter a digit with the task associated above. ")
-        elif int(decision) == 4:
-            plt_iso()
-            print("1. Download evolutionary track files")
-            print("2. Download ischorone files")
-            print("3. Input data for evolutionary track curves ")
-            print("4. Input data for isochrone curves")
-            print("5. Plot all")
-            print("6. Quit")
-            decision = input("Enter a digit with the task associated above. ")
-        elif int(decision) == 5:
-            point = input("Would you like to plot a point? (yes or no) ")
-            while point == 'yes':
+    Expected structure:
 
-                # ask for x point 
-                x_point = input("Please provide the effective temperature in Kelvin: Log(T_eff) =  ")
-                while isint(x_point) == False and isfloat(x_point) == False:
-                    x_point = input("Invalid input. Please provide the effective temperature in Kelvin: Log(T_eff) =  ")
-                x_point = [float(x_point)]
-                x_point_err = input("Please provide the error for effective temperature in Kelvin: Log(T_eff) =  ")
-                while isint(x_point_err) == False and isfloat(x_point_err) == False:
-                    x_point_err = input("Invalid input. Please provide the effective temperature in Kelvin: Log(T_eff) =  ")
-                x_point_err = [float(x_point_err)]
+    {
+        "eep_download": { "run": true, "vcrit": "A", "feh_index": 13 },
+        "iso_download": { "run": true, "vcrit": "B" },
+        "eep_plot": { "run": true },
+        "iso_plot": { "run": true },
+        "eep_plot_settings": {...},
+        "plot_settings": {...},
+        "points": [...]
+    }
+    """
 
-                # ask for y point 
-                y_point = input("Please provide the bolometric luminosity of the star in: Log(L) = ")
-                while isint(y_point) == False and isfloat(y_point) == False:
-                    y_point = input("Invalid input. Please provide the effective temperature in Kelvin: Log(T_eff) =  ")
-                y_point = [float(y_point)]
-                y_point_err = input("Please provide the error for bolometric luminsity in Log(L) =  ")
-                while isint(y_point_err) == False and isfloat(y_point_err) == False:
-                    y_point_err = input("Invalid input. Please provide the error for bolometric luminsity in Log(L) =  ")
-                y_point_err = [float(y_point_err)]
+    # ==========================================================
+    # 1. EEPS DOWNLOAD
+    # ==========================================================
+    if config.get("eep_download", {}).get("run", False):
+        print("\n[MASTER] Downloading EEP...")
+        vcrit = config["eep_download"]["vcrit"]
+        feh_index = config["eep_download"]["feh_index"]
+        download_eep(vcrit_choice=vcrit, metallicity_index=feh_index)
 
-                # name for graph 
-                name = input("Please provide a name for this point: ")
-                plt.scatter(x_point, y_point)
-                plt.errorbar(x_point, y_point, yerr= y_point_err, xerr=x_point_err, label = name)
-                point = input("Would you like to plot another point? (yes or no): ")
-            
+    # ==========================================================
+    # 2. ISOCHRONE DOWNLOAD
+    # ==========================================================
+    if config.get("iso_download", {}).get("run", False):
+        print("\n[MASTER] Downloading isochrone...")
+        vcrit = config["iso_download"]["vcrit"]
+        download_isochrone(vcrit_choice=vcrit)
 
-            title = input("Please input the title to the graph: ")
-            xlabel = input("Enter x label: ")
-            ylabel = input("Enter y label: ")
-            plt.title(title, fontsize = 15)
-            plt.xlabel(xlabel, fontsize = 10)
-            plt.ylabel(ylabel, fontsize = 10)
-            plt.legend()
-            plt.gca().invert_xaxis()
-            plt.grid()
-            plt.show()
+    # ==========================================================
+    # 3. PLOT EEP AUTOMATICALLY
+    # ==========================================================
+    if config.get("eep_plot", {}).get("run", False):
+        print("\n[MASTER] Plotting EEP curves...")
+        eep_cfg = config.get("eep_plot_settings", {})
+        plot_eep(eep_cfg)
 
-    
-            return 
+    # ==========================================================
+    # 4. PLOT ISOCHRONE AUTOMATICALLY
+    # ==========================================================
+    if config.get("iso_plot", {}).get("run", False):
+        print("\n[MASTER] Plotting Isochrone...")
+        iso_settings = config.get("iso_plot", {})
+        points = config.get("points", [])
+        plt_iso(iso_settings, points)
 
-    return 
-
-run()
+    # ==========================================================
+    # 5. Show final plots
+    # ==========================================================
+    print("\n[MASTER] Displaying plots...")
+    plt.show()
 
 
+# =====================================================================
+# ENTRY POINT
+# =====================================================================
+def main():
+    if len(sys.argv) != 2:
+        print("Usage: python3 -m comp333.master <run_config.json>")
+        return
 
+    run_config_path = sys.argv[1]
+
+    # Load main system config (DOWNLOAD_DIR, base URLs)
+    system_cfg = load_config()
+    ensure_config_dir_exists(system_cfg)
+
+    # Load user-defined run_config.json
+    try:
+        with open(run_config_path, "r") as f:
+            run_cfg = json.load(f)
+    except Exception as e:
+        print(f"[ERROR] Could not load run_config file: {e}")
+        return
+
+    run_from_config(run_cfg)
+
+
+# =====================================================================
+# MAIN
+# =====================================================================
+if __name__ == "__main__":
+    main()
