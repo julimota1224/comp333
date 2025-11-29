@@ -1,130 +1,101 @@
 # COMP333 Tracking Young Stars
 
 ## Coding Standards
-
 For coding standards, please refer to our [Python Style Guide](StyleGuide.md).
 
 ## Creators
 nalam309: Nadia Alam
-
 xaviermkim: Xavier Kim
-
 julimota1224: Julissa Mota
 
 ## Program Overview
-A Python-based software package to compare measured stellar properties of luminosity, temperature, and mass with astrophysical models from the MIST databases, and this would result in plotting results on an HR diagram.
+This package automates scientific data handling for stellar evolution research using the MESA Isochrones & Stellar Tracks (MIST) database. It allows users to:
 
-The program is capable of:
-- Downloading a real MIST dataset automatically using Selenium
-- Extracting and visualizing stellar evolutionary track and isochrone data
-- Run a dummy demonstration of the data
-- Guide users through each step interactively using a terminal-line menu. 
+- Automatically download evolutionary tracks (EEPS) and isochrones
+- Extract MIST .txz archives
+- Plot evolutionary tracks, interpolated curves, and HR diagrams
+- Overlay user-specified stars on an HR diagram
+- Control all behavior through a single configuration file (run_config.json)
 
-## User Guide
+This version removes the old menu-style interface and replaces it with a clean, automated, config-driven workflow.
 
-### Before You Begin
+## Installation
 
-- Make sure you have Python 3 and pip installed and up to date.
-  You can check this by running `python3 --version` and `python3 -m pip install --upgrade pip`
-- If you are new to using the terminal or command line, see [The Terminal: First Steps and Useful Commands](https://realpython.com/terminal-commands/) for a quick walkthrough of cloning repositories, navigating directories, and running programs.
-- The program currently requires Google Chrome for automation. If you don't have it installed, you can download it [here](https://www.google.com/chrome/).
+1. **Clone the Repository**:
+In VS Code:
+Clone Git Repository → enter the repo URL
 
-### Installation Steps
+Or via terminal:
+git clone <repo-url>
+cd comp333
 
-1. **Clone the Repository**: Clone the main repository to your local machine. 
-   Open up VS Code, click on "Clone Git Repository", and enter the repository's URL.
+2. **Install Dependencies**:
+pip install matplotlib astropy fastnumbers numpy
 
-2. **Install Required Packages**: Install matplotlib, astropy, fastnumbers, and selenium.
-   ```bash
-   pip install matplotlib astropy fastnumbers selenium
-   ```
+3. **Verify Python**:
+You need:
+Python 3.9+
 
-3. **Run the Script**: Run the program by entering:
-   ```bash
-   python3 master.py
-   ```
-   You can now use the package as usual, testing Option 1 (EEPS) and Option 2 (Isochrone) downloads. You should notice the files are downloaded much faster, and the new menus automatically construct the correct file names.
+Check with:
+python3 --version
 
-### Main Menu
+### How the program works:
+The system is controlled by two configuration files:
 
-You will see the following menu:
+1. System Config (auto-generated)： config.json
 
-1. Download evolutionary track files
-2. Download isochrone files
-3. Input data for evolutionary track curves
-4. Input data for isochrone curves
-5. Plot all
-6. Quit
+Created on the first run. It stores:
 
-Each option guides you through a short sequence of user inputs to simulate data handling:
-- **Option 1**: Demonstrates how evolutionary tracks would be downloaded
-- **Option 2**: Demonstrates how isochrone files would be downloaded
-- **Option 3**: Simulates entering data for evolutionary track plotting
-- **Option 4**: Simulates entering data for isochrone plotting
-- **Option 5**: Creates a combined plot of both data sets
-- **Option 6**: Exits the program
+- download directory (~/MIST_Data)
+- base URL for MIST tarballs
+- default filenames (optional)
 
-**Note**: It should be noted that in this skeletal version of the code, no real data or files are required. When the program asks for an absolute path (i.e., in option 3 or 4), entering any valid path (e.g., `/Users/test/dummy.txz`) will allow the code to run through the program and sufficiently show you an example of a graph. Additionally, the "download" options simulate the download process rather than saving actual files; files are not yet saved locally, and future versions will store downloaded data more efficiently.
+You do not need to modify this file.
 
-### Option Exploration
+2. User Run Config： run_config.json
 
-#### Option 1: Downloading Evolutionary Track Files
+This is your main script. It tells the program:
 
-*After following the initial installation steps:*
+- What to download
+- What to plot
+- What ages/masses to use
+- What stars to overlay
+- Where the isochrone data is stored
 
-1. Type `1` and press Enter.
-2. Follow on-screen prompts: Which evolutionary track do you wish to download and the index for what Fe/H you would like?
-3. When the download is completed, a message will be printed that states the following: "Link clicked; check your downloads folder/browser for the file."
+You fully control the program by editing this file.
 
-#### Option 2: Downloading Isochrone Files
+A commented example is included as:
+run_config_template.jsonc
 
-*After following the initial installation steps:*
+Copy it to create your own:
+cp run_config_template.jsonc run_config.json
 
-1. Type `2` and press Enter.
-2. Follow on-screen prompts: Which Isochrone track would you like to download?
-3. When the download is completed, a message will be printed that states: "Isochrone link clicked; check your browser/downloads settings."
+## Running the Program
+From inside the directory containing the comp333/ folder:
+python3 -m comp333.master run_config.json
 
-#### Option 3: Inputting Data for Evolutionary Track Curves
+The script will:
+- Parse your run config
+- Download missing MIST data
+- Extract and validate files
+- Plot evolutionary tracks
+- Plot isochrones at your selected age
+- Overlay any custom stars
+- Show a final HR diagram
 
-*After following the initial installation steps:*
-
-1. Type `3` and press Enter.
-2. Follow on-screen prompts: Enter the absolute path to your downloaded evolutionary track file, input the minimum eep mass curve you want to highlight, and input the maximum eep mass curve you want to highlight.
-3. Once the program verifies the dummy plot (no real file path is required), a plot will appear.
-
-#### Option 4: Inputting Data for Isochrone Curves
-
-*After following the initial installation steps:*
-
-1. Type `4` and press Enter.
-2. Follow the on-screen prompts: Choose a metallicity value [Fe/H] from a numbered list (1–15), enter minimum age, maximum age, minimum mass, and maximum mass.
-3. A plot will appear.
-
-#### Option 5: Plotting All Data
-
-*After following the initial installation steps:*
-
-1. Type `5` and press Enter.
-2. The program will simulate combining the previously entered evolutionary track and isochrone data.
-3. Follow on-screen prompts: Effective temperature, the error for effective temperature, bolometric luminosity of the star, the error for bolometric luminosity, name for the point, graph title, x label, y label.
-4. A plot will appear.
-
-**Note**: After viewing the plot, the program closes automatically instead of returning to the menu. To continue, re-run: `python3 master.py`
-
-#### Option 6: Quit
-
-Ends the program.
+Close the matplotlib window to return control to the terminal.
 
 ## Testing
+Two unit tests are available:
+1. test_make_driver.py which tests WebDriver logic
+2. test_xpath_function.py which tests XPath calculation for identifying metallicity index positions
 
-This is a living document explaining how to run unit tests. More unit tests will be added as the project develops.
+Run tests with:
+python3 test_make_driver.py
+python3 test_xpath_function.py
 
-### Running Unit Tests
+### Help for New Terminal Users
+If you are new to command-line interfaces, this quick guide is helpful:
 
-The project has two test files:
-- `test_make_driver.py` - Tests the WebDriver creation function
-- `test_xpath_function.py` - Tests the XPath index calculation logic
-
-Run individual test files in terminal:
-- `python3 test_make_driver.py`
-- `python3 test_xpath_function.py`
+The Terminal: First Steps & Useful Commands
+https://realpython.com/terminal-commands/
