@@ -72,7 +72,7 @@ cp run_config_template.jsonc run_config.json
 
 ## Running the Program
 From inside the directory containing the comp333/ folder:
-python3 -m comp333.master run_config.json
+python3 -m comp333.master comp333/run_config.json
 
 The script will:
 - Parse your run config
