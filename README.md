@@ -5,24 +5,24 @@ Automated MIST Evolutionary Track & Isochrone Processing
 For coding standards, please refer to our [Python Style Guide](StyleGuide.md).
 
 ## Creators
-nalam309: Nadia Alam
-xaviermkim: Xavier Kim
-julimota1224: Julissa Mota
+- **nalam309: Nadia Alam**
+- **xaviermkim: Xavier Kim**
+- **julimota1224: Julissa Mota**
 
 ## Program Overview
-Astronomers frequently rely on MESA Isochrones & Stellar Tracks (MIST) to compare stellar luminosities, temperatures, masses, and ages. However, downloading, extracting, parsing, and plotting these files manually is slow, error-prone, and dependent on remembering complex MIST naming conventions.
+Astronomers frequently rely on MESA Isochrones & Stellar Tracks (MIST) to compare stellar luminosities, temperatures, masses, and ages. However, downloading, extracting, parsing, and plotting these files manually is slow, error-prone, and dependent on remembering complex MIST naming conventions. This package automates the entire workflow.
 
-What the tool does:
-- Downloads MIST evolutionary tracks (EEPS) and isochrones directly via HTTPS
-- Extracts .txz archives and auto-detects extracted directories
-- Loads and interpolates evolutionary tracks between masses
-- Plots:
- - EEP curves
- - Interpolated mass curves
- - Isochrones at user-selected ages
- - HR diagrams with custom star points
+**What the tool does:**
+1. Downloads MIST evolutionary tracks (EEPS) and isochrones directly via HTTPS
+2. Extracts .txz archives and auto-detects extracted directories
+3. Loads and interpolates evolutionary tracks between masses
+4. Plots:
+- EEP curves
+- Interpolated mass curves
+- Isochrones at user-selected ages
+- HR diagrams with custom star points
  
-Summary of major improvements:
+**Summary of major improvements:**
 - Removed Selenium entirely
 - Removed the menu-based interface
 - Replaced all interactivity with a clean configuration-driven workflow
@@ -33,6 +33,7 @@ Summary of major improvements:
 ## Installation
 
 1. **Clone the Repository**:
+
 Using VS Code:
 Clone Git Repository → enter the repo URL
 
@@ -41,9 +42,11 @@ git clone <repo-url>
 cd comp333
 
 2. **Install Dependencies**:
+   
 pip install matplotlib astropy fastnumbers numpy requests
 
-3. **Verify Python Version**:
+4. **Verify Python Version**:
+   
 You need Python 3.9 or newer.
 
 Check with:
@@ -55,6 +58,7 @@ The software uses two configuration files.
 1. System Config (auto-generated): comp333/files/config.json
 
 Created automatically on the first run.
+
 It stores:
 - The download directory (default: ~/MIST_Data)
 - The MIST base URL
