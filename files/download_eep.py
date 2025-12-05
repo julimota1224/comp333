@@ -1,28 +1,21 @@
 import os
 import requests
 import tarfile
-from .config_utils import load_config, save_config, ensure_config_dir_exists
+from .config_utils import load_config, ensure_config_dir_exists
 
 
-def _get_feh_string(index):
-    feh_map = {
-        1: "m4.00",
-        2: "m3.50",
-        3: "m3.00",
-        4: "m2.50",
-        5: "m2.00",
-        6: "m1.75",
-        7: "m1.50",
-        8: "m1.25",
-        9: "m1.00",
-        10: "m0.75",
-        11: "m0.50",
-        12: "m0.25",
-        13: "p0.00",
-        14: "p0.25",
-        15: "p0.50",
-    }
-    return feh_map.get(index)
+# Converts numeric [Fe/H] to the MIST filename format
+def _feh_to_code(feh):
+    """
+    Converts numeric Fe/H to the MIST filename code.
+
+    Example:
+    feh = -0.25  →  "m0.25"
+    feh = 0.0    →  "p0.00"
+    feh = 0.50   →  "p0.50"
+    """
+    sign = "p" if feh >= 0 else "m"
+    return f"{sign}{abs(feh):.2f}"
 
 
 def _fetch_and_extract(url, local_path):
@@ -51,48 +44,45 @@ def _fetch_and_extract(url, local_path):
         return False
 
 
-def _execute_download(config, filename, local_path):
-    base_url = config["MIST_BASE_URL"]
-    download_url = f"{base_url}{filename}"
-    return _fetch_and_extract(download_url, local_path)
-
-
-def download_eep(vcrit_choice=None, metallicity_index=None):
+def download_eep(vcrit=None, feh=None):
     """
-    If args are provided: non-interactive (used by run_config.json)
-    If args are None: interactive old menu
+    New clean API:
+    vcrit : float (e.g., 0.4 or 0.0)
+    feh   : float (e.g., -0.25, 0.00, +0.50)
+
+    No more A/B options or metallicity indexes.
     """
+
+    if vcrit is None or feh is None:
+        raise ValueError("download_eep() requires numeric vcrit and feh.")
+
+    # Validate inputs
+    if not isinstance(vcrit, (int, float)):
+        raise ValueError("vcrit must be numeric (e.g., 0.4 or 0.0).")
+    if not isinstance(feh, (int, float)):
+        raise ValueError("feh must be numeric (e.g., -0.25 or 0.0).")
+
     config = load_config()
     download_dir = config["DOWNLOAD_DIR"]
 
     ensure_config_dir_exists(config)
 
-    interactive = (vcrit_choice is None or metallicity_index is None)
+    # Convert numeric values to MIST naming conventions
+    feh_code = _feh_to_code(feh)              # "-0.25" → "m0.25"
+    vcrit_code = f"{vcrit:.1f}"               # 0.4 → "0.4"
 
-    if interactive:
-        raise RuntimeError("Interactive mode disabled for JSON-driven workflow.")
-
-    # Non-interactive mode VALIDATION
-    if vcrit_choice not in ("A", "B"):
-        raise ValueError("vcrit_choice must be 'A' or 'B'.")
-
-    if not isinstance(metallicity_index, int):
-        raise ValueError("metallicity_index must be an integer.")
-
-    if not (1 <= metallicity_index <= 15):
-        raise ValueError("metallicity_index must be 1–15.")
-
-    vvcrit = "0.4" if vcrit_choice == "A" else "0.0"
-    feh_code = _get_feh_string(metallicity_index)
-
-    filename = f"MIST_v1.2_feh_{feh_code}_afe_p0.0_vvcrit{vvcrit}_EEPS.txz"
+    filename = f"MIST_v1.2_feh_{feh_code}_afe_p0.0_vvcrit{vcrit_code}_EEPS.txz"
     local_path = os.path.join(download_dir, filename)
+    base_name = filename.replace(".txz", "")
 
-    base_name = filename.rsplit(".", 1)[0]
-
+    # Skip if already extracted
     if any(f.startswith(base_name) for f in os.listdir(download_dir)):
         print(f"Already exists → skipping {filename}\n")
         return
 
+    # Build URL and download
+    base_url = config["MIST_BASE_URL"]
+    url = f"{base_url}{filename}"
+
     print(f"Downloading: {filename}")
-    return _execute_download(config, filename, local_path)
+    return _fetch_and_extract(url, local_path)

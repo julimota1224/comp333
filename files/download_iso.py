@@ -1,19 +1,17 @@
 import os
 import requests
 import tarfile
-from .config_utils import load_config, save_config, ensure_config_dir_exists
+from .config_utils import load_config, ensure_config_dir_exists
 
 
-# Handles the actual download and extraction
+# ---------------------------------------------------------------
+# Helper: download + extract
+# ---------------------------------------------------------------
 def _fetch_and_extract(url, local_path):
-    """
-    Downloads the MIST Isochrone file (.txz) from the URL, extracts its 
-    contents to the download directory, and removes the compressed archive.
-    """
-    print(f"Starting download from: {url}")
+    print(f"Starting download: {url}")
 
     try:
-        # Download the compressed file
+        # Download file
         response = requests.get(url, stream=True)
         response.raise_for_status()
 
@@ -21,122 +19,86 @@ def _fetch_and_extract(url, local_path):
             for chunk in response.iter_content(chunk_size=8192):
                 f.write(chunk)
 
-        print(f"Download complete. File saved temporarily to: {local_path}")
-
-        # Extract the file contents
         extract_dir = os.path.dirname(local_path)
-        print(f"Extracting contents to: {extract_dir}")
+        print(f"Extracting into: {extract_dir}")
 
+        # Extract .txz archive
         with tarfile.open(local_path, "r:xz") as tar:
             tar.extractall(path=extract_dir)
 
-        print("Extraction complete. Cleaning up compressed file.")
-
-        # Clean up the compressed archive
         os.remove(local_path)
-
+        print("Download + extraction complete.\n")
         return True
 
-    except requests.exceptions.RequestException as e:
-        print(f"Network Error during download. Check URL and connection: {e}")
-        return False
-    except tarfile.TarError as e:
-        print(
-            "Extraction Error (Is the downloaded file a valid .txz archive?): "
-            f"{e}"
-        )
-        return False
     except Exception as e:
-        print(f"An unexpected error occurred during file processing: {e}")
+        print(f"[ERROR] Isochrone download failed: {e}")
         return False
 
 
-# Handles the download URL construction
+# ---------------------------------------------------------------
+# Helper: construct URL + download
+# ---------------------------------------------------------------
 def _execute_download(config, filename, local_path):
-    """
-    Internal function to construct URL and execute the download.
-    """
-    base_url = config.get("MIST_BASE_URL")
-    folder = ""  # Using the simplified path (BaseURL + Filename)
-    download_url = f"{base_url}{folder}{filename}"
-
-    print(f"Attempting download from: {download_url}")
-    return _fetch_and_extract(download_url, local_path)
+    base_url = config["MIST_BASE_URL"]
+    url = f"{base_url}{filename}"
+    return _fetch_and_extract(url, local_path)
 
 
-# Handles user interaction and configuration
-def download_isochrone(vcrit_choice=None):
+# ---------------------------------------------------------------
+# MAIN FUNCTION (non-interactive ONLY)
+#
+# vcrit must be numeric (0.0 or 0.4)
+#
+# ---------------------------------------------------------------
+def download_isochrone(vcrit=None):
     """
-    Handles downloading MIST Isochrone files with v/vcrit selection.
+    Download a MIST Isochrone archive based on numeric vcrit.
+    Example:
+        vcrit = 0.0   → MIST_v1.2_vvcrit0.0_UBVRIplus.txz
+        vcrit = 0.4   → MIST_v1.2_vvcrit0.4_UBVRIplus.txz
 
-    If vcrit_choice is provided ('A' or 'B'), runs non-interactively.
-    Otherwise, falls back to interactive prompts.
+    Interactive (menu-based) mode is DISABLED.
     """
+
     config = load_config()
-    download_dir = config.get("DOWNLOAD_DIR")
+    download_dir = config["DOWNLOAD_DIR"]
 
-    if not ensure_config_dir_exists(config):
-        print("Cannot proceed without a valid download directory.")
-        return
+    ensure_config_dir_exists(config)
 
-    interactive = vcrit_choice is None
+    # ---------------------------------------------------------
+    # Validate inputs
+    # ---------------------------------------------------------
+    if vcrit is None:
+        raise RuntimeError(
+            "Interactive mode is disabled. You must specify vcrit in run_config.json."
+        )
 
-    if interactive:
-        print("\n--- Select Isochrone File ---")
+    if not isinstance(vcrit, (float, int)):
+        raise ValueError("vcrit must be numeric (e.g., 0.0 or 0.4).")
 
-        print("What Isochrone track would you like to download: ")
-        print("A: v/vcrit = 0.4 (Default) ")
-        print("B: v/vcrit = 0.0 ")
+    vvcrit = f"{float(vcrit):.1f}"   # Convert to string formatted like "0.0"
 
-        user_input = input("Select A or B (case sensitive). ").strip()
-        while user_input not in ["A", "B"]:
-            user_input = input("Not a valid input, please select A or B. ").strip()
+    # ---------------------------------------------------------
+    # Build filename
+    # ---------------------------------------------------------
+    filename = f"MIST_v1.2_vvcrit{vvcrit}_UBVRIplus.txz"
+    local_path = os.path.join(download_dir, filename)
+    base_name = filename.rsplit(".", 1)[0]
 
-        vcrit_choice = user_input
-
-    if vcrit_choice not in ("A", "B"):
-        raise ValueError("vcrit_choice must be 'A' or 'B'")
-
-    # Construct Filename
-    vvcrit = "0.4" if vcrit_choice == "A" else "0.0"
-
-    # Filename pattern: MIST_v1.2_vvcrit0.4_UBVRIplus.txz (or vvcrit0.0)
-    download_filename = f"MIST_v1.2_vvcrit{vvcrit}_UBVRIplus.txz"
-    local_path = os.path.join(download_dir, download_filename)
-
-    # Check for extracted files, not the temporary .txz archive.
-    base_name = download_filename.rsplit(".", 1)[0]
-
+    # Detect if already extracted (directory matching prefix exists)
     try:
-        extracted_content_exists = any(
-            f.startswith(base_name) for f in os.listdir(download_dir)
-        )
+        existing = any(f.startswith(base_name) for f in os.listdir(download_dir))
     except FileNotFoundError:
-        extracted_content_exists = False
+        existing = False
 
-    if extracted_content_exists:
+    if existing:
         print(
-            f"\nRequired data for '{base_name}' already exists in: {download_dir}. "
-            "Skipping download."
+            f"Required isochrone directory already exists → skipping {filename}\n"
         )
         return
 
-    if interactive:
-        # Ask to save this as the new default
-        save_default = input(
-            f"\nSave '{download_filename}' as the new default Isochrone file? (Y/N): "
-        ).strip().lower()
-        if save_default == "y":
-            config["DEFAULT_ISO_FILE"] = download_filename
-            save_config(config)
-            print("Configuration updated.")
-
-        prompt = input(
-            f"File is missing. Download '{download_filename}'? (Y/N): "
-        ).strip().lower()
-        if prompt not in ["y", ""]:
-            print("\nDownload aborted. Returning to main menu.")
-            return
-
-    # Non-interactive mode: just download the file
-    return _execute_download(config, download_filename, local_path)
+    # ---------------------------------------------------------
+    # Perform download
+    # ---------------------------------------------------------
+    print(f"Downloading Isochrone: {filename}")
+    return _execute_download(config, filename, local_path)

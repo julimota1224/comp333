@@ -1,18 +1,16 @@
 {
   "eep_download": {
     "run": true,
-    "vcrit": "A",
-    "feh_index": 13
+    "vcrit": 0.4,
+    "feh": -0.25
   },
 
   "iso_download": {
     "run": true,
-    "vcrit": "B"
+    "vcrit": 0.0
   },
 
-  "eep_plot": {
-    "run": true
-  },
+  "eep_plot": { "run": true },
 
   "eep_plot_settings": {
     "min_mass_code": "00100",
@@ -25,16 +23,16 @@
   },
 
   "iso_plot": {
-    "run": true,
-    "iso_directory": "/Users/jmota/MIST_Data/MIST_v1.2_vvcrit0.0_UBVRIplus"
+    "run": true
   },
 
   "plot_settings": {
+    "iso_directory": "/Users/jmota/MIST_Data/MIST_v1.2_vvcrit0.0_UBVRIplus",
+    "age": 9.0,
     "title": "HR Diagram with MIST Tracks",
     "xlabel": "log(T_eff)",
     "ylabel": "log(L)",
-    "invert_xaxis": true,
-    "age": 9.0
+    "invert_xaxis": true
   },
 
   "points": [
