@@ -9,9 +9,7 @@ from comp333.files.isochrone import plt_iso
 from comp333.files.evolutionary_track import plot_eep
 
 
-# =====================================================================
 # Run everything from run_config.json
-# =====================================================================
 def run_from_config(config):
     """
     Executes all tasks defined in run_config.json.
@@ -28,9 +26,7 @@ def run_from_config(config):
     }
     """
 
-    # ==========================================================
-    # 1. EEPS DOWNLOAD
-    # ==========================================================
+    # EEPS DOWNLOAD
     eep_cfg = config.get("eep_download", {})
     if eep_cfg.get("run", False):
         print("\n[MASTER] Downloading EEP...")
@@ -45,9 +41,7 @@ def run_from_config(config):
 
         download_eep(vcrit=vcrit, feh=feh)
 
-    # ==========================================================
-    # 2. ISOCHRONE DOWNLOAD
-    # ==========================================================
+    # ISOCHRONE DOWNLOAD
     iso_cfg = config.get("iso_download", {})
     if iso_cfg.get("run", False):
         print("\n[MASTER] Downloading Isochrone...")
@@ -58,17 +52,13 @@ def run_from_config(config):
 
         download_isochrone(vcrit=vcrit)
 
-    # ==========================================================
-    # 3. PLOT EEP AUTOMATICALLY
-    # ==========================================================
+    # PLOT EEP AUTOMATICALLY
     if config.get("eep_plot", {}).get("run", False):
         print("\n[MASTER] Plotting EEP curves...")
         eep_plot_cfg = config.get("eep_plot_settings", {})
         plot_eep(eep_plot_cfg)
 
-    # ==========================================================
-    # 4. PLOT ISOCHRONE AUTOMATICALLY
-    # ==========================================================
+    # PLOT ISOCHRONE AUTOMATICALLY
     if config.get("iso_plot", {}).get("run", False):
         print("\n[MASTER] Plotting Isochrone...")
 
@@ -78,16 +68,13 @@ def run_from_config(config):
         points = config.get("points", [])
         plt_iso(iso_settings, points)
 
-    # ==========================================================
-    # 5. Display plots
-    # ==========================================================
+    # Display plots
     print("\n[MASTER] Displaying plots...")
     plt.show()
 
 
-# =====================================================================
+
 # ENTRY POINT
-# =====================================================================
 def main():
     if len(sys.argv) != 2:
         print("Usage: python3 -m comp333.master <run_config.json>")
@@ -110,8 +97,6 @@ def main():
     run_from_config(run_cfg)
 
 
-# =====================================================================
 # MAIN
-# =====================================================================
 if __name__ == "__main__":
     main()
