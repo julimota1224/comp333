@@ -1,23 +1,34 @@
 import json
 import os
 
-# ALWAYS store the config.json inside the comp333/files directory
-CONFIG_FILE = os.path.join(os.path.dirname(__file__), 'config.json')
+# NOTE:
+# This config.json is AUTO-GENERATED on first run.
+# Users generally should NOT edit this file unless changing DOWNLOAD_DIR.
+
+CONFIG_FILE = os.path.join(os.path.dirname(__file__), "config.json")
 
 
 def get_default_download_dir():
-    """Return ~/MIST_Data"""
-    home_dir = os.path.expanduser('~')
-    return os.path.join(home_dir, 'MIST_Data')
+    """
+    Return the default download directory:
+    ~/MIST_Data
+    """
+    home_dir = os.path.expanduser("~")
+    return os.path.join(home_dir, "MIST_Data")
 
 
 def load_config():
-    """Load config from comp333/files/config.json"""
+    """
+    Load system configuration from comp333/files/config.json.
+
+    If the file does not exist, it is automatically created
+    using safe, system-independent defaults.
+    """
     if os.path.exists(CONFIG_FILE):
-        with open(CONFIG_FILE, 'r') as f:
+        with open(CONFIG_FILE, "r") as f:
             return json.load(f)
 
-    print(f"Configuration file '{CONFIG_FILE}' not found. Using default values.")
+    print(f"[INFO] config.json not found. Creating default configuration.")
 
     default_config = {
         "DOWNLOAD_DIR": get_default_download_dir(),
@@ -31,23 +42,29 @@ def load_config():
 
 
 def save_config(config_data):
-    """Save config into comp333/files/config.json"""
+    """
+    Save system configuration to comp333/files/config.json
+    """
     try:
-        with open(CONFIG_FILE, 'w') as f:
+        with open(CONFIG_FILE, "w") as f:
             json.dump(config_data, f, indent=4)
-        print(f"Configuration saved to {CONFIG_FILE}.")
+        print(f"[INFO] Configuration saved to {CONFIG_FILE}")
     except Exception as e:
-        print(f"Error saving configuration: {e}")
+        print(f"[ERROR] Failed to save configuration: {e}")
 
 
 def ensure_config_dir_exists(config_data):
-    """Ensure DOWNLOAD_DIR exists"""
+    """
+    Ensure the DOWNLOAD_DIR exists; create it if missing.
+    """
     download_dir = config_data.get("DOWNLOAD_DIR")
+
     if download_dir and not os.path.exists(download_dir):
         try:
             os.makedirs(download_dir)
-            print(f"Created download directory: {download_dir}")
+            print(f"[INFO] Created download directory: {download_dir}")
         except OSError as e:
-            print(f"Failed to create download directory {download_dir}: {e}")
+            print(f"[ERROR] Could not create download directory {download_dir}: {e}")
             return False
+
     return True

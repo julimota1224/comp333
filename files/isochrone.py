@@ -4,66 +4,114 @@ import matplotlib.pyplot as plt
 from astropy.io import ascii
 
 
-def plt_iso(iso_settings, points):
+def plt_iso(plot_settings, eep_cfg, points):
+    """
+    Plot restricted isochrone segments corresponding to the
+    same mass and age bounds used for evolutionary tracks.
 
-    iso_dir = iso_settings.get("iso_directory")
-    desired_age = iso_settings.get("age", 9.0)   # log(age/yr), default = 1e9 yr = 1 Gyr
+    Inputs:
+    - plot_settings:
+        {
+            "iso_directory": "...",
+            "title": "...",
+            "xlabel": "...",
+            "ylabel": "...",
+            "invert_xaxis": true
+        }
 
+    - eep_cfg:
+        {
+            "age_min": <float, years>,
+            "age_max": <float, years>,
+            "min_mass_code": "00105",
+            "max_mass_code": "00108"
+        }
+
+    - points:
+        list of star dictionaries with x, y, x_err, y_err
+    """
+
+    # Validate isochrone directory
+    iso_dir = plot_settings.get("iso_directory")
     if iso_dir is None or not os.path.isdir(iso_dir):
         raise ValueError(f"[ERROR] Isochrone directory not found: {iso_dir}")
 
     print(f"[INFO] Using Isochrone directory: {iso_dir}")
 
-    # find files
-    iso_files = sorted([
+    # Locate isochrone file
+    iso_files = sorted(
         f for f in os.listdir(iso_dir)
-        if f.endswith((".iso", ".iso.cmd", ".cmd", ".dat"))
-    ])
+        if f.endswith((".iso", ".iso.cmd"))
+    )
 
     if not iso_files:
         raise RuntimeError("[ERROR] No isochrone files found.")
 
-    chosen = iso_files[0]
-    filepath = os.path.join(iso_dir, chosen)
-    print(f"[INFO] Using Isochrone file: {chosen}")
+    filepath = os.path.join(iso_dir, iso_files[0])
+    print(f"[INFO] Using Isochrone file: {iso_files[0]}")
 
-    # read
+    # Read data
     try:
         data = ascii.read(filepath)
     except Exception as e:
-        raise RuntimeError(f"[ERROR] Failed to read {chosen}: {e}")
+        raise RuntimeError(f"[ERROR] Failed to read isochrone file: {e}")
 
-    # extract columns
-    ages = np.array(data['col2'])      # log10(age)
+    # Extract columns
+    ages = np.array(data['col2'])   # log10(age/yr)
+    mass = np.array(data['col3'])   # initial stellar mass
     logT = np.array(data['col5'])
     logL = np.array(data['col7'])
 
-    # find which rows correspond to the desired isochrone
+    # Convert config values
+    age_min = np.log10(eep_cfg["age_min"])
+    age_max = np.log10(eep_cfg["age_max"])
+
+    min_mass = float(eep_cfg["min_mass_code"]) / 100
+    max_mass = float(eep_cfg["max_mass_code"]) / 100
+
+    # Find closest available isochrone ages
     unique_ages = np.unique(ages)
-    idx = np.argmin(np.abs(unique_ages - desired_age))
-    chosen_age = unique_ages[idx]
+    age_lo = unique_ages[np.argmin(np.abs(unique_ages - age_min))]
+    age_hi = unique_ages[np.argmin(np.abs(unique_ages - age_max))]
 
-    print(f"[INFO] Using isochrone age log10(age/yr) = {chosen_age}")
+    print(f"[INFO] Isochrone ages used: log(age) = {age_lo:.2f}, {age_hi:.2f}")
 
-    mask = (ages == chosen_age)
-
-    # plot
-    plt.plot(logT[mask], logL[mask], '-', color='blue', label=f"Isochrone log(age)={chosen_age:.2f}")
-
-    # plot stars
-    for p in points:
-        plt.errorbar(
-            p["x"], p["y"],
-            xerr=p["x_err"], yerr=p["y_err"],
-            fmt='o', label=p["name"]
+    # Plot restricted isochrone segments
+    for age_val in (age_lo, age_hi):
+        mask = (
+            (ages == age_val) &
+            (mass >= min_mass) &
+            (mass <= max_mass)
         )
 
-    plt.xlabel("log(T_eff)")
-    plt.ylabel("log(L)")
-    plt.title("Isochrone")
+        plt.plot(
+            logT[mask],
+            logL[mask],
+            '-',
+            linewidth=2,
+            label=f"Isochrone log(age)={age_val:.2f}"
+        )
 
+    # Plot user-specified stars
+    for p in points:
+        plt.errorbar(
+            p["x"],
+            p["y"],
+            xerr=p.get("x_err"),
+            yerr=p.get("y_err"),
+            fmt='o',
+            capsize=3,
+            label=p["name"]
+        )
+
+    # Styling
+    plt.xlabel(plot_settings.get("xlabel", "log(T_eff)"))
+    plt.ylabel(plot_settings.get("ylabel", "log(L)"))
+    plt.title(plot_settings.get("title", "HR Diagram"))
     plt.grid(True)
-    plt.legend()
-    plt.gca().invert_xaxis()
 
-    print("[INFO] Isochrone plot complete.")
+    if plot_settings.get("invert_xaxis", True):
+        plt.gca().invert_xaxis()
+
+    plt.legend()
+    print("[INFO] Isochrone plotting complete.")

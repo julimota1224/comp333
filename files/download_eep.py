@@ -4,15 +4,16 @@ import tarfile
 from .config_utils import load_config, ensure_config_dir_exists
 
 
-# Converts numeric [Fe/H] to the MIST filename format
+# Helpers
+
 def _feh_to_code(feh):
     """
-    Converts numeric Fe/H to the MIST filename code.
+    Convert numeric [Fe/H] to MIST filename code.
 
-    Example:
-    feh = -0.25  →  "m0.25"
-    feh = 0.0    →  "p0.00"
-    feh = 0.50   →  "p0.50"
+    Examples:
+    -0.25 → "m0.25"
+     0.00 → "p0.00"
+     0.50 → "p0.50"
     """
     sign = "p" if feh >= 0 else "m"
     return f"{sign}{abs(feh):.2f}"
@@ -40,38 +41,52 @@ def _fetch_and_extract(url, local_path):
         return True
 
     except Exception as e:
-        print("ERROR:", e)
+        print(f"[ERROR] Failed to download or extract EEPS: {e}")
         return False
 
 
+# Public API
+
 def download_eep(vcrit=None, feh=None):
     """
-    New clean API:
-    vcrit : float (e.g., 0.4 or 0.0)
-    feh   : float (e.g., -0.25, 0.00, +0.50)
+    Download MIST evolutionary tracks (EEPS) using numeric parameters.
 
-    No more A/B options or metallicity indexes.
+    Parameters
+    ----------
+    vcrit : float
+        Stellar rotation fraction (e.g. 0.4 or 0.0)
+
+    feh : float
+        Metallicity [Fe/H] (e.g. -0.25, 0.00, +0.50)
+
+    This function is fully non-interactive and intended
+    for use with run_config.json.
     """
 
+    # Validate inputs
     if vcrit is None or feh is None:
         raise ValueError("download_eep() requires numeric vcrit and feh.")
 
-    # Validate inputs
     if not isinstance(vcrit, (int, float)):
         raise ValueError("vcrit must be numeric (e.g., 0.4 or 0.0).")
+
     if not isinstance(feh, (int, float)):
         raise ValueError("feh must be numeric (e.g., -0.25 or 0.0).")
 
+    # Load system configuration
     config = load_config()
-    download_dir = config["DOWNLOAD_DIR"]
+    download_dir = config.get("DOWNLOAD_DIR")
 
-    ensure_config_dir_exists(config)
+    if not ensure_config_dir_exists(config):
+        raise RuntimeError("Download directory could not be created.")
 
-    # Convert numeric values to MIST naming conventions
-    feh_code = _feh_to_code(feh)              # "-0.25" → "m0.25"
-    vcrit_code = f"{vcrit:.1f}"               # 0.4 → "0.4"
+    # Construct filename
+    feh_code = _feh_to_code(feh)
+    vcrit_code = f"{vcrit:.1f}"
 
-    filename = f"MIST_v1.2_feh_{feh_code}_afe_p0.0_vvcrit{vcrit_code}_EEPS.txz"
+    filename = (
+        f"MIST_v1.2_feh_{feh_code}_afe_p0.0_vvcrit{vcrit_code}_EEPS.txz"
+    )
     local_path = os.path.join(download_dir, filename)
     base_name = filename.replace(".txz", "")
 
@@ -80,9 +95,9 @@ def download_eep(vcrit=None, feh=None):
         print(f"Already exists → skipping {filename}\n")
         return
 
-    # Build URL and download
-    base_url = config["MIST_BASE_URL"]
+    # Download and extract
+    base_url = config.get("MIST_BASE_URL")
     url = f"{base_url}{filename}"
 
     print(f"Downloading: {filename}")
-    return _fetch_and_extract(url, local_path)
+    _fetch_and_extract(url, local_path)

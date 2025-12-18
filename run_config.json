@@ -2,7 +2,7 @@
   "eep_download": {
     "run": true,
     "vcrit": 0.4,
-    "feh": -0.25
+    "feh": [ -0.25 ]
   },
 
   "iso_download": {
@@ -10,25 +10,26 @@
     "vcrit": 0.0
   },
 
-  "eep_plot": { "run": true },
+  "eep_plot": {
+    "run": true
+  },
 
   "eep_plot_settings": {
-    "min_mass_code": "00100",
-    "max_mass_code": "00500",
+    "min_mass_code": "00105",
+    "max_mass_code": "00108",
     "age_min": 1000000,
     "age_max": 30000000,
-    "label_lower": "1.00 M⊙",
-    "label_upper": "5.00 M⊙",
+    "label_lower": "1.05 M⊙",
+    "label_upper": "1.08 M⊙",
     "fill_between": true
   },
 
   "iso_plot": {
-    "run": true
+    "run": true,
+    "age": 9.0
   },
 
   "plot_settings": {
-    "iso_directory": "/Users/jmota/MIST_Data/MIST_v1.2_vvcrit0.0_UBVRIplus",
-    "age": 9.0,
     "title": "HR Diagram with MIST Tracks",
     "xlabel": "log(T_eff)",
     "ylabel": "log(L)",
@@ -37,18 +38,11 @@
 
   "points": [
     {
-      "name": "Star 1",
+      "name": "Star A",
       "x": 3.75,
       "x_err": 0.05,
       "y": 1.20,
       "y_err": 0.10
-    },
-    {
-      "name": "Star 2",
-      "x": 3.65,
-      "x_err": 0.03,
-      "y": 0.95,
-      "y_err": 0.08
     }
   ]
 }

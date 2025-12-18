@@ -14,67 +14,80 @@ def run_from_config(config):
     """
     Executes all tasks defined in run_config.json.
 
-    Expected clean structure:
+    Expected structure:
 
     {
-        "eep_download": { "run": true, "vcrit": 0.4, "feh": -0.25 },
-        "iso_download": { "run": true, "vcrit": 0.0 },
+        "eep_download": {
+            "run": true,
+            "vcrit": 0.4,
+            "feh": [-0.25, 0.0]
+        },
+        "iso_download": {
+            "run": true,
+            "vcrit": 0.0
+        },
         "eep_plot": { "run": true },
-        "iso_plot": { "run": true, "iso_directory": "...", "age": 9.0 },
+        "iso_plot": { "run": true },
         "eep_plot_settings": {...},
+        "plot_settings": {...},
         "points": [...]
     }
     """
 
-    # EEPS DOWNLOAD
+    # 1. EEP downloads
     eep_cfg = config.get("eep_download", {})
     if eep_cfg.get("run", False):
-        print("\n[MASTER] Downloading EEP...")
+        print("\n[MASTER] Downloading EEP files...")
 
         vcrit = eep_cfg.get("vcrit")
-        feh = eep_cfg.get("feh")
+        feh_vals = eep_cfg.get("feh")
 
-        if vcrit is None or feh is None:
+        if vcrit is None or feh_vals is None:
             raise ValueError(
-                "[ERROR] run_config.json must include numeric 'vcrit' and 'feh' for eep_download."
+                "[ERROR] eep_download requires numeric 'vcrit' and 'feh'."
             )
 
-        download_eep(vcrit=vcrit, feh=feh)
+        # Allow feh to be a single value or a list
+        if not isinstance(feh_vals, list):
+            feh_vals = [feh_vals]
 
-    # ISOCHRONE DOWNLOAD
-    iso_cfg = config.get("iso_download", {})
-    if iso_cfg.get("run", False):
-        print("\n[MASTER] Downloading Isochrone...")
+        for feh in feh_vals:
+            download_eep(vcrit=vcrit, feh=feh)
 
-        vcrit = iso_cfg.get("vcrit")
+    # 2. Isochrone download
+    iso_dl_cfg = config.get("iso_download", {})
+    if iso_dl_cfg.get("run", False):
+        print("\n[MASTER] Downloading Isochrone files...")
+
+        vcrit = iso_dl_cfg.get("vcrit")
         if vcrit is None:
-            raise ValueError("[ERROR] run_config.json must include numeric 'vcrit' for iso_download.")
+            raise ValueError(
+                "[ERROR] iso_download requires numeric 'vcrit'."
+            )
 
         download_isochrone(vcrit=vcrit)
 
-    # PLOT EEP AUTOMATICALLY
+    # 3. Plot evolutionary tracks
     if config.get("eep_plot", {}).get("run", False):
-        print("\n[MASTER] Plotting EEP curves...")
+        print("\n[MASTER] Plotting evolutionary tracks...")
         eep_plot_cfg = config.get("eep_plot_settings", {})
         plot_eep(eep_plot_cfg)
 
-    # PLOT ISOCHRONE AUTOMATICALLY
+    # 4. Plot isochrone segments + stars
     if config.get("iso_plot", {}).get("run", False):
-        print("\n[MASTER] Plotting Isochrone...")
+        print("\n[MASTER] Plotting isochrone segments...")
 
-        iso_settings = config.get("plot_settings", {})
-        # iso_settings may also contain iso_directory, age, etc.
-
+        plot_settings = config.get("plot_settings", {})
         points = config.get("points", [])
-        plt_iso(iso_settings, points)
 
-    # Display plots
+        plt_iso(plot_settings, points)
+
+    # 5. Display final figure
     print("\n[MASTER] Displaying plots...")
     plt.show()
 
 
-
-# ENTRY POINT
+# Entry Point
 def main():
     if len(sys.argv) != 2:
         print("Usage: python3 -m comp333.master <run_config.json>")
@@ -82,7 +95,7 @@ def main():
 
     run_config_path = sys.argv[1]
 
-    # Load system config (base URLs, download dir)
+    # Load system configuration
     system_cfg = load_config()
     ensure_config_dir_exists(system_cfg)
 
@@ -97,6 +110,6 @@ def main():
     run_from_config(run_cfg)
 
 
-# MAIN
+# Main
 if __name__ == "__main__":
     main()

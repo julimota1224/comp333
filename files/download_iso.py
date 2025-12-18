@@ -4,14 +4,12 @@ import tarfile
 from .config_utils import load_config, ensure_config_dir_exists
 
 
-# ---------------------------------------------------------------
-# Helper: download + extract
-# ---------------------------------------------------------------
+# Helpers
+
 def _fetch_and_extract(url, local_path):
     print(f"Starting download: {url}")
 
     try:
-        # Download file
         response = requests.get(url, stream=True)
         response.raise_for_status()
 
@@ -22,7 +20,6 @@ def _fetch_and_extract(url, local_path):
         extract_dir = os.path.dirname(local_path)
         print(f"Extracting into: {extract_dir}")
 
-        # Extract .txz archive
         with tarfile.open(local_path, "r:xz") as tar:
             tar.extractall(path=extract_dir)
 
@@ -35,70 +32,62 @@ def _fetch_and_extract(url, local_path):
         return False
 
 
-# ---------------------------------------------------------------
-# Helper: construct URL + download
-# ---------------------------------------------------------------
 def _execute_download(config, filename, local_path):
-    base_url = config["MIST_BASE_URL"]
+    base_url = config.get("MIST_BASE_URL")
     url = f"{base_url}{filename}"
     return _fetch_and_extract(url, local_path)
 
 
-# ---------------------------------------------------------------
-# MAIN FUNCTION (non-interactive ONLY)
-#
-# vcrit must be numeric (0.0 or 0.4)
-#
-# ---------------------------------------------------------------
+# Public API
+
 def download_isochrone(vcrit=None):
     """
-    Download a MIST Isochrone archive based on numeric vcrit.
-    Example:
-        vcrit = 0.0   → MIST_v1.2_vvcrit0.0_UBVRIplus.txz
-        vcrit = 0.4   → MIST_v1.2_vvcrit0.4_UBVRIplus.txz
+    Download a MIST Isochrone archive using numeric vcrit.
+
+    Parameters
+    ----------
+    vcrit : float
+        Stellar rotation fraction (e.g. 0.0 or 0.4)
 
     Interactive (menu-based) mode is DISABLED.
     """
 
-    config = load_config()
-    download_dir = config["DOWNLOAD_DIR"]
-
-    ensure_config_dir_exists(config)
-
-    # ---------------------------------------------------------
-    # Validate inputs
-    # ---------------------------------------------------------
+    # Validate input
     if vcrit is None:
         raise RuntimeError(
-            "Interactive mode is disabled. You must specify vcrit in run_config.json."
+            "download_isochrone() requires numeric vcrit in run_config.json."
         )
 
-    if not isinstance(vcrit, (float, int)):
+    if not isinstance(vcrit, (int, float)):
         raise ValueError("vcrit must be numeric (e.g., 0.0 or 0.4).")
 
-    vvcrit = f"{float(vcrit):.1f}"   # Convert to string formatted like "0.0"
+    # Load system configuration
+    config = load_config()
+    download_dir = config.get("DOWNLOAD_DIR")
 
-    # ---------------------------------------------------------
-    # Build filename
-    # ---------------------------------------------------------
+    if not ensure_config_dir_exists(config):
+        raise RuntimeError("Download directory could not be created.")
+
+    # Construct filename
+    vvcrit = f"{float(vcrit):.1f}"
     filename = f"MIST_v1.2_vvcrit{vvcrit}_UBVRIplus.txz"
     local_path = os.path.join(download_dir, filename)
-    base_name = filename.rsplit(".", 1)[0]
+    base_name = filename.replace(".txz", "")
 
-    # Detect if already extracted (directory matching prefix exists)
+    # Skip if already extracted
     try:
-        existing = any(f.startswith(base_name) for f in os.listdir(download_dir))
+        already_exists = any(
+            f.startswith(base_name) for f in os.listdir(download_dir)
+        )
     except FileNotFoundError:
-        existing = False
+        already_exists = False
 
-    if existing:
+    if already_exists:
         print(
             f"Required isochrone directory already exists → skipping {filename}\n"
         )
         return
 
-    # ---------------------------------------------------------
-    # Perform download
-    # ---------------------------------------------------------
+    # Download and extract
     print(f"Downloading Isochrone: {filename}")
-    return _execute_download(config, filename, local_path)
+    _execute_download(config, filename, local_path)

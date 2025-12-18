@@ -1,75 +1,53 @@
 import os
-import math as m
 import numpy as np
 import matplotlib.pyplot as plt
 from astropy.io import ascii
 from .config_utils import load_config
 
-# =====================================================================
-# Main plot function (fully automated, no input prompts)
-# =====================================================================
+
+# Plot evolutionary tracks (EEP) using run_config.json only
 def plot_eep(cfg):
     """
-    cfg comes from run_config.json, containing:
+    Plot lower and upper evolutionary tracks with optional interpolation.
+
+    cfg structure (from run_config.json):
 
     {
-        "min_mass_code": "00100",
-        "max_mass_code": "00500",
+        "min_mass_code": "00105",
+        "max_mass_code": "00108",
         "age_min": 1e6,
         "age_max": 3e7,
-        "label_lower": "1.00 M⊙",
-        "label_upper": "5.00 M⊙",
+        "label_lower": "1.05 M⊙",
+        "label_upper": "1.08 M⊙",
         "fill_between": true
     }
     """
 
-    # -------------------------------------------------------------
-    # 1. Load system config (download directory)
-    # -------------------------------------------------------------
+    # 1. Load system config
     system_cfg = load_config()
     download_dir = system_cfg.get("DOWNLOAD_DIR")
 
     if not os.path.isdir(download_dir):
-        print(f"[ERROR] DOWNLOAD_DIR does not exist: {download_dir}")
-        return
+        raise RuntimeError(f"[ERROR] DOWNLOAD_DIR does not exist: {download_dir}")
 
-    # -------------------------------------------------------------
-    # 2. Auto-detect extracted EEPS directory
-    # -------------------------------------------------------------
+    # 2. Find extracted EEPS directory
     eep_dirs = [
         os.path.join(download_dir, d)
         for d in os.listdir(download_dir)
-        if os.path.isdir(os.path.join(download_dir, d)) and d.endswith("_EEPS")
+        if d.endswith("_EEPS") and os.path.isdir(os.path.join(download_dir, d))
     ]
 
     if not eep_dirs:
-        print(f"[ERROR] No extracted EEPS directories found in {download_dir}")
-        print("Run eep_download first.")
-        return
+        raise RuntimeError("[ERROR] No extracted EEPS directories found.")
 
-    path = eep_dirs[0]   # use the first match
+    path = eep_dirs[0]
     print(f"[INFO] Using EEPS directory: {path}")
 
-    # -------------------------------------------------------------
-    # 3. Extract list of files inside EEPS folder
-    # -------------------------------------------------------------
-    file_list = os.listdir(path)
+    # 3. Identify available mass tracks
+    files = sorted(f for f in os.listdir(path) if f.endswith(".track.eep"))
+    file_codes = [f[:5] for f in files]
 
-    # Clean out README files
-    mass_files = []
-    for f in file_list:
-        if f.endswith(".track.eep"):
-            mass_files.append(f)
-
-    # Sorted list for consistency
-    mass_files = sorted(mass_files)
-
-    # Convert file names (#####M.track.eep) → mass codes ##### (string)
-    file_codes = [f[:5] for f in mass_files]
-
-    # -------------------------------------------------------------
-    # 4. Load user-specified settings from cfg
-    # -------------------------------------------------------------
+    # 4. Load config parameters
     min_code = cfg["min_mass_code"]
     max_code = cfg["max_mass_code"]
     age_min = float(cfg["age_min"])
@@ -78,128 +56,77 @@ def plot_eep(cfg):
     label_upper = cfg["label_upper"]
     fill_region = cfg.get("fill_between", False)
 
-    # -------------------------------------------------------------
-    # Helper function: load temperature + luminosity arrays
-    # -------------------------------------------------------------
-    def load_mass_track(mcode):
-        fname = os.path.join(path, f"{mcode}M.track.eep")
-        data = ascii.read(fname)
-        logt = np.array(data['col12'])
-        logl = np.array(data['col7'])
-        age = np.array(data['col1'])
-        return logt, logl, age
+    # Helpers
+    def load_track(code):
+        data = ascii.read(os.path.join(path, f"{code}M.track.eep"))
+        return (
+            np.array(data["col12"]),  # logT
+            np.array(data["col7"]),   # logL
+            np.array(data["col1"])    # age
+        )
 
-    # -------------------------------------------------------------
-    # Function: restrict arrays to given age range
-    # -------------------------------------------------------------
-    def restrict_age(logt, logl, age):
-        idx = np.where((age >= age_min) & (age <= age_max))
-        return logt[idx], logl[idx]
+    def restrict_by_age(logT, logL, age):
+        mask = (age >= age_min) & (age <= age_max)
+        return logT[mask], logL[mask]
 
-    # -------------------------------------------------------------
-    # Function: interpolate between two mass tracks
-    # -------------------------------------------------------------
-    def interpolate_mass(min_m, max_m, target_m, logt_min, logt_max, logl_min, logl_max):
-        """
-        Interpolates temperature + luminosity arrays between mass min_m and max_m
-        to reach target mass target_m.
-        """
-        # Arrays must match in size
-        while len(logt_min) > len(logt_max):
-            logt_min = logt_min[1:]
-        while len(logt_max) > len(logt_min):
-            logt_max = logt_max[1:]
+    def interpolate(code_lo, code_hi, code_target, logT_lo, logT_hi, logL_lo, logL_hi):
+        # Match array sizes
+        n = min(len(logT_lo), len(logT_hi))
+        logT_lo, logT_hi = logT_lo[:n], logT_hi[:n]
+        logL_lo, logL_hi = logL_lo[:n], logL_hi[:n]
 
-        while len(logl_min) > len(logl_max):
-            logl_min = logl_min[1:]
-        while len(logl_max) > len(logl_min):
-            logl_max = logl_max[1:]
+        m_lo = float(code_lo) / 100
+        m_hi = float(code_hi) / 100
+        m_t = float(code_target) / 100
 
-        # Number of interpolation steps
-        m_min = float(min_m) / 100
-        m_max = float(max_m) / 100
-        m_target = float(target_m) / 100
+        frac = (m_t - m_lo) / (m_hi - m_lo)
 
-        steps = int(round((m_max - m_min) / 0.01))
-        idx_target = int(round((m_target - m_min) / 0.01))
+        logT = logT_lo + frac * (logT_hi - logT_lo)
+        logL = logL_lo + frac * (logL_hi - logL_lo)
 
-        out_logt = []
-        out_logl = []
+        return logT, logL
 
-        for i in range(len(logt_min)):
-            t_vals = np.linspace(logt_min[i], logt_max[i], steps + 2)
-            l_vals = np.linspace(logl_min[i], logl_max[i], steps + 2)
-            out_logt.append(t_vals[idx_target])
-            out_logl.append(l_vals[idx_target])
-
-        return np.array(out_logt), np.array(out_logl)
-
-    # -------------------------------------------------------------
-    # 5. Compute LOWER curve (min mass curve)
-    # -------------------------------------------------------------
+    # 5. Compute LOWER curve
     if min_code in file_codes:
-        # Direct file exists
-        logt, logl, age = load_mass_track(min_code)
-        low_logt, low_logl = restrict_age(logt, logl, age)
+        logT, logL, age = load_track(min_code)
+        low_T, low_L = restrict_by_age(logT, logL, age)
     else:
-        # Must interpolate
-        # Find nearest lower + upper mass data files
-        pos = 0
-        while pos < len(file_codes) and file_codes[pos] < min_code:
-            pos += 1
-        upper_code = file_codes[pos]
-        lower_code = file_codes[pos - 1]
+        idx = next(i for i, c in enumerate(file_codes) if c > min_code)
+        lo, hi = file_codes[idx - 1], file_codes[idx]
 
-        # Load both
-        logt_low, logl_low, age_low = load_mass_track(lower_code)
-        logt_high, logl_high, age_high = load_mass_track(upper_code)
+        logT_lo, logL_lo, age_lo = load_track(lo)
+        logT_hi, logL_hi, age_hi = load_track(hi)
 
-        # Restrict both to the same age range
-        logt_low, logl_low = restrict_age(logt_low, logl_low, age_low)
-        logt_high, logl_high = restrict_age(logt_high, logl_high, age_high)
+        logT_lo, logL_lo = restrict_by_age(logT_lo, logL_lo, age_lo)
+        logT_hi, logL_hi = restrict_by_age(logT_hi, logL_hi, age_hi)
 
-        # Interpolate to target min_code
-        low_logt, low_logl = interpolate_mass(lower_code, upper_code, min_code,
-                                              logt_low, logt_high, logl_low, logl_high)
+        low_T, low_L = interpolate(lo, hi, min_code, logT_lo, logT_hi, logL_lo, logL_hi)
 
-    # -------------------------------------------------------------
-    # 6. Compute UPPER curve (max mass curve)
-    # -------------------------------------------------------------
+    # 6. Compute UPPER curve
     if max_code in file_codes:
-        logt, logl, age = load_mass_track(max_code)
-        high_logt, high_logl = restrict_age(logt, logl, age)
+        logT, logL, age = load_track(max_code)
+        high_T, high_L = restrict_by_age(logT, logL, age)
     else:
-        pos = 0
-        while pos < len(file_codes) and file_codes[pos] < max_code:
-            pos += 1
-        upper_code = file_codes[pos]
-        lower_code = file_codes[pos - 1]
+        idx = next(i for i, c in enumerate(file_codes) if c > max_code)
+        lo, hi = file_codes[idx - 1], file_codes[idx]
 
-        # Load both
-        logt_low, logl_low, age_low = load_mass_track(lower_code)
-        logt_high, logl_high, age_high = load_mass_track(upper_code)
+        logT_lo, logL_lo, age_lo = load_track(lo)
+        logT_hi, logL_hi, age_hi = load_track(hi)
 
-        # Restrict both
-        logt_low, logl_low = restrict_age(logt_low, logl_low, age_low)
-        logt_high, logl_high = restrict_age(logt_high, logl_high, age_high)
+        logT_lo, logL_lo = restrict_by_age(logT_lo, logL_lo, age_lo)
+        logT_hi, logL_hi = restrict_by_age(logT_hi, logL_hi, age_hi)
 
-        # Interpolated curve
-        high_logt, high_logl = interpolate_mass(lower_code, upper_code, max_code,
-                                                logt_low, logt_high, logl_low, logl_high)
+        high_T, high_L = interpolate(lo, hi, max_code, logT_lo, logT_hi, logL_lo, logL_hi)
 
-    # -------------------------------------------------------------
-    # 7. Plotting
-    # -------------------------------------------------------------
-    plt.plot(low_logt, low_logl, 'x', label=label_lower)
-    plt.plot(high_logt, high_logl, 'x', label=label_upper)
+    # 7. Plot
+    plt.plot(low_T, low_L, '-', linewidth=2, label=label_lower)
+    plt.plot(high_T, high_L, '-', linewidth=2, label=label_upper)
 
     if fill_region:
         plt.fill(
-            np.append(low_logt, high_logt[::-1]),
-            np.append(low_logl, high_logl[::-1]),
-            'y', alpha=0.4
+            np.concatenate([low_T, high_T[::-1]]),
+            np.concatenate([low_L, high_L[::-1]]),
+            alpha=0.3
         )
 
-    print(f"[INFO] Generated curves with {len(low_logt)} and {len(high_logt)} points.")
-
-    return
+    print(f"[INFO] Generated EEP curves with {len(low_T)} and {len(high_T)} points.")

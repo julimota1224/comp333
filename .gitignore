@@ -1,0 +1,9 @@
+# Auto-generated system config
+comp333/files/config.json
+
+# Python cache
+__pycache__/
+*.pyc
+
+# OS junk
+.DS_Store
