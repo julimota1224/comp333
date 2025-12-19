@@ -1,39 +1,45 @@
 # COMP333 Tracking Young Stars
 Automated MIST Evolutionary Track & Isochrone Processing
 
+
 ## Coding Standards
 For coding standards, please refer to our [Python Style Guide](StyleGuide.md).
+
 
 ## Creators
 - **nalam309: Nadia Alam**
 - **xaviermkim: Xavier Kim**
 - **julimota1224: Julissa Mota**
 
+
 ## Program Overview
 Astronomers frequently rely on MESA Isochrones & Stellar Tracks (MIST) to compare stellar luminosities, temperatures, masses, and ages. However, downloading, extracting, parsing, and plotting these files manually is slow, error-prone, and dependent on remembering complex MIST naming conventions. This package automates the entire workflow.
 
-**What the tool does:**
-1. Downloads MIST evolutionary tracks (EEPS) and isochrones directly via HTTPS
-2. Extracts .txz archives and auto-detects extracted directories
-3. Loads and interpolates evolutionary tracks between masses
+
+## What the Tool Does
+1. Downloads MIST evolutionary tracks (EEPS) and isochrones via HTTPS
+2. Automatically extracts `.txz` archives and detects extracted directories
+3. Loads evolutionary tracks and interpolates between stellar masses
 4. Plots:
-- EEP curves
-- Interpolated mass curves
-- Isochrones at user-selected ages
-- HR diagrams with custom star points
+   - Evolutionary mass tracks
+   - Interpolated mass tracks (when required)
+   - Isochrones at selected stellar ages
+   - HR diagrams with observational constraints
+
  
-**Summary of major improvements:**
-- Removed Selenium entirely
-- Removed the menu-based interface
-- Replaced all interactivity with a clean configuration-driven workflow
-- All user settings are stored in run_config.json
-- Updated plotting style with cleaner formatting and optional filled interpolation regions
-- Runs are fully reproducible and require no user input at runtime
+## Major Improvements Over the Original Version
+- Removed Selenium and browser automation
+- Removed menu-based, interactive input
+- Replaced all runtime prompts with a configuration-driven workflow
+- Supports plotting **multiple metallicities on the same HR diagram**
+- Supports plotting **incomplete observational constraints**
+- Uses continuous curves instead of marker-based tracks
+- Uses physically motivated axis bounds to emphasize the low-mass regime
+- Fully reproducible runs with no user input required at runtime
+
 
 ## Installation
-
-1. **Clone the Repository**:
-
+### 1. Clone the Repository
 Using VS Code:
 Clone Git Repository → enter the repo URL
 
@@ -41,105 +47,78 @@ Or in terminal:
 git clone <repo-url>
 cd comp333
 
-2. **Install Dependencies**:
-   
+### 2. Install Dependencies
 pip install matplotlib astropy fastnumbers numpy requests
 
-4. **Verify Python Version**:
-   
+### 3. Verify Python Version
 You need Python 3.9 or newer.
 
 Check with:
 python3 --version
 
-### How the Program Works:
+## Configuration Files
 The software uses two configuration files.
 
-1. System Config (auto-generated): comp333/files/config.json
+### 1. System Configuration (auto-generated)
+Location: comp333/files/config.json
+This file stores machine-specific settings such as the download directory and MIST base URL. It is created automatically on first run and should not be committed to version control.
 
-Created automatically on the first run.
-
-It stores:
-- The download directory (default: ~/MIST_Data)
-- The MIST base URL
-- Default filenames (if applicable)
-- You normally do not need to edit this file.
-
-2. User Run Config: run_config.json
+### 2. User Run Configuration
+Location: run_config.json
 
 This file controls:
-- Whether to download EEPs
-- Whether to download Isochrones
-- v/vcrit values
-- Metallicity
-- Mass codes for EEP plotting
-- Isochrone age to use
+- Which MIST files are downloaded
+- Which metallicities are plotted
+- Which stellar masses are plotted or interpolated
+- Age ranges for evolutionary tracks
+- Isochrone age ranges
 - HR diagram labels
-- Custom stars with errors
+- Observational constraints
+  
+A fully commented example is provided in:
+run_config_template.jsonc
 
-A fully commented example template is included: run_config_template.jsonc
-
-To create an editable copy:
+Create your own editable configuration with:
 cp run_config_template.jsonc run_config.json
 
 ## Running the Program
-Run from the directory containing the comp333/ package:
-python3 -m comp333.master comp333/run_config.json
+From the directory containing the comp333/ package:
+python3 -m comp333.master run_config.json
 
-The command will:
-- Parse your run configuration
-- Download missing EEPS files
-- Download missing Isochrone files
-- Extract .txz archives
-- Identify all necessary extracted directories
-- Generate:
- - Evolutionary track curves
- - Interpolated mass curves
- - Isochrone curve at the selected age
- - HR diagram with your custom star points
+The program will:
+- Download missing MIST files
+- Extract archives automatically
+- Plot evolutionary tracks for each requested metallicity
+- Plot isochrones for each requested metallicity and age
+- Overlay observational constraints
 
-A matplotlib window will appear.
-Close the window to return control to the terminal.
+## Interpreting Multi-Metallicity Plots
+When multiple metallicities are provided:
+- Each metallicity produces its own set of mass tracks
+- Each metallicity produces its own set of isochrones
+- Labels explicitly indicate [Fe/H] values
+  
+The total number of curves plotted is:
+(# metallicities) × (# masses) + (# metallicities) × (# isochrone ages)
 
-## Editing run_config.json
-Below is a simplified sample structure:
+Users may reduce visual complexity by:
+- Using a single metallicity
+- Setting age_min == age_max to plot a single isochrone per metallicity
 
-{
-  "eep_download": { "run": true, "vcrit": "0.4", "feh": -0.25 },
-
-  "iso_download": { "run": true, "vcrit": "0.0" },
-
-  "eep_plot": { "run": true },
-
-  "eep_plot_settings": {
-    "min_mass": 1.00,
-    "max_mass": 5.00,
-    "age_min": 1000000,
-    "age_max": 30000000,
-    "fill_between": true
-  },
-
-  "iso_plot": {
-    "run": true,
-    "iso_directory": "/Users/.../MIST_v1.2_vvcrit0.0_UBVRIplus",
-    "age": 9.0
-  },
-
-  "points": [
-    { "name": "Star 1", "x": 3.75, "y": 1.20, "x_err": 0.05, "y_err": 0.10 }
-  ]
-}
-
-Everything is explicit.
-There are no menus, prompts, or filename guessing.
+## Observational Constraints
+The software supports incomplete data commonly found in the literature, including:
+- Exact HR points
+- Temperature-only constraints
+- Luminosity-only constraints
+- Rectangular uncertainty regions
+Unsupported or malformed constraints are skipped with a warning rather than causing the program to fail.
 
 ## Output
-The program produces:
-- Evolutionary track curves
-- Interpolated mass curves
-- Isochrone curves at a chosen log(age)
-- HR diagrams with proper axes and inverted temperature scale
-- Optional star overlays with error bars
+The program produces HR diagrams with:
+- Physically correct axis orientation
+- Evolutionary and interpolated mass tracks
+- Isochrones from tabulated stellar models
+- Optional observational constraints
 
 ## Testing
 Legacy tests from the original Selenium version are included:
@@ -152,7 +131,7 @@ python3 test_xpath_function.py
 
 These tests are no longer essential for the new automated workflow but remain for historical completeness.
 
-### Help for New Terminal Users
+## Help for New Terminal Users
 If you are new to command-line work, this guide may help:
 
 The Terminal: First Steps & Useful Commands
