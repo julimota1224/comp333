@@ -1,115 +1,82 @@
 import json
 import sys
+import numpy as np
 import matplotlib.pyplot as plt
 
 from comp333.files.config_utils import load_config, ensure_config_dir_exists
 from comp333.files.download_eep import download_eep
 from comp333.files.download_iso import download_isochrone
-from comp333.files.isochrone import plt_iso
 from comp333.files.evolutionary_track import plot_eep
+from comp333.files.isochrone import plt_iso
 
 
-# Run everything from run_config.json
-def run_from_config(config):
-    """
-    Executes all tasks defined in run_config.json.
+def run_from_config(cfg):
+    # --- Downloads ---
+    fehs = []
+    eep_vcrit = None
+    iso_vcrit = None
 
-    Expected structure:
+    if cfg.get("eep_download", {}).get("run"):
+        eep_vcrit = cfg["eep_download"]["vcrit"]
+        fehs = cfg["eep_download"]["feh"]
+        if not isinstance(fehs, list):
+            fehs = [fehs]
+        for feh in fehs:
+            download_eep(vcrit=eep_vcrit, feh=feh)
 
-    {
-        "eep_download": {
-            "run": true,
-            "vcrit": 0.4,
-            "feh": [-0.25, 0.0]
-        },
-        "iso_download": {
-            "run": true,
-            "vcrit": 0.0
-        },
-        "eep_plot": { "run": true },
-        "iso_plot": { "run": true },
-        "eep_plot_settings": {...},
-        "plot_settings": {...},
-        "points": [...]
-    }
-    """
+    if cfg.get("iso_download", {}).get("run"):
+        iso_vcrit = cfg["iso_download"]["vcrit"]
+        download_isochrone(iso_vcrit)
 
-    # 1. EEP downloads
-    eep_cfg = config.get("eep_download", {})
-    if eep_cfg.get("run", False):
-        print("\n[MASTER] Downloading EEP files...")
+    # --- Plot EEPs (now supports multiple feh) ---
+    eep_plot_cfg = dict(cfg["eep_plot_settings"])
+    if fehs:
+        eep_plot_cfg["feh_list"] = fehs
+    if eep_vcrit is not None:
+        eep_plot_cfg["vcrit"] = eep_vcrit
 
-        vcrit = eep_cfg.get("vcrit")
-        feh_vals = eep_cfg.get("feh")
+    eep_bounds = plot_eep(eep_plot_cfg)
 
-        if vcrit is None or feh_vals is None:
-            raise ValueError(
-                "[ERROR] eep_download requires numeric 'vcrit' and 'feh'."
-            )
+    # --- Plot isochrones (now supports multiple feh) ---
+    plot_cfg = dict(cfg["plot_settings"])
+    if fehs:
+        plot_cfg["feh_list"] = fehs
+    if iso_vcrit is not None:
+        plot_cfg["vcrit"] = iso_vcrit
 
-        # Allow feh to be a single value or a list
-        if not isinstance(feh_vals, list):
-            feh_vals = [feh_vals]
+    iso_bounds = plt_iso(
+        plot_cfg,
+        eep_bounds,
+        cfg.get("points", [])
+    )
 
-        for feh in feh_vals:
-            download_eep(vcrit=vcrit, feh=feh)
+    # Combined bounds if needed later
+    all_x = np.concatenate([eep_bounds["x"], iso_bounds["x"]])
+    all_y = np.concatenate([eep_bounds["y"], iso_bounds["y"]])
 
-    # 2. Isochrone download
-    iso_dl_cfg = config.get("iso_download", {})
-    if iso_dl_cfg.get("run", False):
-        print("\n[MASTER] Downloading Isochrone files...")
+    # Use bounds from EEPs (low-mass focused)
+    plt.xlim(*eep_bounds["xlim"])
+    plt.ylim(*eep_bounds["ylim"])
 
-        vcrit = iso_dl_cfg.get("vcrit")
-        if vcrit is None:
-            raise ValueError(
-                "[ERROR] iso_download requires numeric 'vcrit'."
-            )
-
-        download_isochrone(vcrit=vcrit)
-
-    # 3. Plot evolutionary tracks
-    if config.get("eep_plot", {}).get("run", False):
-        print("\n[MASTER] Plotting evolutionary tracks...")
-        eep_plot_cfg = config.get("eep_plot_settings", {})
-        plot_eep(eep_plot_cfg)
-
-    # 4. Plot isochrone segments + stars
-    if config.get("iso_plot", {}).get("run", False):
-        print("\n[MASTER] Plotting isochrone segments...")
-
-        plot_settings = config.get("plot_settings", {})
-        points = config.get("points", [])
-
-        plt_iso(plot_settings, points)
-
-    # 5. Display final figure
-    print("\n[MASTER] Displaying plots...")
+    plt.xlabel(plot_cfg["xlabel"])
+    plt.ylabel(plot_cfg["ylabel"])
+    plt.title(plot_cfg["title"])
+    plt.legend()
+    plt.grid(True)
     plt.show()
 
 
-# Entry Point
 def main():
     if len(sys.argv) != 2:
         print("Usage: python3 -m comp333.master <run_config.json>")
         return
 
-    run_config_path = sys.argv[1]
+    with open(sys.argv[1]) as f:
+        cfg = json.load(f)
 
-    # Load system configuration
-    system_cfg = load_config()
-    ensure_config_dir_exists(system_cfg)
-
-    # Load run_config.json
-    try:
-        with open(run_config_path, "r") as f:
-            run_cfg = json.load(f)
-    except Exception as e:
-        print(f"[ERROR] Could not load run_config file: {e}")
-        return
-
-    run_from_config(run_cfg)
+    ensure_config_dir_exists(load_config())
+    run_from_config(cfg)
 
 
-# Main
 if __name__ == "__main__":
     main()

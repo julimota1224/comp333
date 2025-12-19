@@ -2,7 +2,7 @@
   "eep_download": {
     "run": true,
     "vcrit": 0.4,
-    "feh": [ -0.25 ]
+    "feh": [-0.25, 0.0]
   },
 
   "iso_download": {
@@ -10,30 +10,20 @@
     "vcrit": 0.0
   },
 
-  "eep_plot": {
-    "run": true
-  },
-
   "eep_plot_settings": {
     "min_mass_code": "00105",
     "max_mass_code": "00108",
     "age_min": 1000000,
-    "age_max": 30000000,
-    "label_lower": "1.05 M⊙",
-    "label_upper": "1.08 M⊙",
-    "fill_between": true
-  },
-
-  "iso_plot": {
-    "run": true,
-    "age": 9.0
+    "age_max": 30000000
   },
 
   "plot_settings": {
+    "iso_directory": "~/MIST_Data/MIST_v1.2_vvcrit0.0_UBVRIplus",
+    "age_min": 7.0,
+    "age_max": 7.0,
     "title": "HR Diagram with MIST Tracks",
     "xlabel": "log(T_eff)",
-    "ylabel": "log(L)",
-    "invert_xaxis": true
+    "ylabel": "log(L)"
   },
 
   "points": [
@@ -41,8 +31,7 @@
       "name": "Star A",
       "x": 3.75,
       "x_err": 0.05,
-      "y": 1.20,
-      "y_err": 0.10
+      "y_range": [1.1, 1.3]
     }
   ]
 }

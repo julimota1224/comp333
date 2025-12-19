@@ -5,128 +5,150 @@ from astropy.io import ascii
 from .config_utils import load_config
 
 
-# Plot evolutionary tracks (EEP) using run_config.json only
-def plot_eep(cfg):
+def _feh_to_code(feh: float) -> str:
+    sign = "p" if feh >= 0 else "m"
+    return f"{sign}{abs(feh):.2f}"
+
+
+def _vcrit_to_code(vcrit: float) -> str:
+    return f"{float(vcrit):.1f}"
+
+
+def _find_eep_dir(download_dir: str, feh: float, vcrit: float) -> str:
     """
-    Plot lower and upper evolutionary tracks with optional interpolation.
-
-    cfg structure (from run_config.json):
-
-    {
-        "min_mass_code": "00105",
-        "max_mass_code": "00108",
-        "age_min": 1e6,
-        "age_max": 3e7,
-        "label_lower": "1.05 M⊙",
-        "label_upper": "1.08 M⊙",
-        "fill_between": true
-    }
+    Find extracted EEPS directory matching feh + vcrit.
+    Example:
+      MIST_v1.2_feh_p0.00_afe_p0.0_vvcrit0.4_EEPS
     """
+    feh_code = _feh_to_code(float(feh))
+    vv = _vcrit_to_code(float(vcrit))
 
-    # 1. Load system config
-    system_cfg = load_config()
-    download_dir = system_cfg.get("DOWNLOAD_DIR")
-
-    if not os.path.isdir(download_dir):
-        raise RuntimeError(f"[ERROR] DOWNLOAD_DIR does not exist: {download_dir}")
-
-    # 2. Find extracted EEPS directory
-    eep_dirs = [
+    target_suffix = f"feh_{feh_code}_afe_p0.0_vvcrit{vv}_EEPS"
+    candidates = [
         os.path.join(download_dir, d)
         for d in os.listdir(download_dir)
-        if d.endswith("_EEPS") and os.path.isdir(os.path.join(download_dir, d))
+        if d.endswith("_EEPS") and target_suffix in d
     ]
+    if candidates:
+        return sorted(candidates)[0]
 
-    if not eep_dirs:
-        raise RuntimeError("[ERROR] No extracted EEPS directories found.")
+    # fallback: any EEPS dir (for robustness), but only if nothing matches
+    fallback = [
+        os.path.join(download_dir, d)
+        for d in os.listdir(download_dir)
+        if d.endswith("_EEPS")
+    ]
+    if fallback:
+        return sorted(fallback)[0]
 
-    path = eep_dirs[0]
-    print(f"[INFO] Using EEPS directory: {path}")
+    raise RuntimeError("No EEPS directory found. Run eep_download first.")
 
-    # 3. Identify available mass tracks
-    files = sorted(f for f in os.listdir(path) if f.endswith(".track.eep"))
-    file_codes = [f[:5] for f in files]
 
-    # 4. Load config parameters
+def plot_eep(cfg):
+    """
+    Plot two evolutionary tracks (min and max mass) for one or more metallicities.
+    Returns bounds tuned to the low-mass regime across all plotted tracks.
+    """
+
+    system_cfg = load_config()
+    download_dir = system_cfg["DOWNLOAD_DIR"]
+
     min_code = cfg["min_mass_code"]
     max_code = cfg["max_mass_code"]
     age_min = float(cfg["age_min"])
     age_max = float(cfg["age_max"])
-    label_lower = cfg["label_lower"]
-    label_upper = cfg["label_upper"]
-    fill_region = cfg.get("fill_between", False)
 
-    # Helpers
-    def load_track(code):
+    feh_list = cfg.get("feh_list", None)
+    if feh_list is None:
+        feh_list = [0.0]  # default if not provided
+    if not isinstance(feh_list, list):
+        feh_list = [feh_list]
+
+    vcrit = float(cfg.get("vcrit", 0.4))
+
+    label_low = cfg.get("label_lower", "Lower Mass Track")
+    label_high = cfg.get("label_upper", "Upper Mass Track")
+
+    all_T_accum = []
+    all_L_accum = []
+
+    def load_track(path, code):
         data = ascii.read(os.path.join(path, f"{code}M.track.eep"))
         return (
-            np.array(data["col12"]),  # logT
-            np.array(data["col7"]),   # logL
-            np.array(data["col1"])    # age
+            np.array(data["col12"]),  # log(T_eff)
+            np.array(data["col7"]),   # log(L)
+            np.array(data["col1"]),   # age (years)
         )
 
-    def restrict_by_age(logT, logL, age):
-        mask = (age >= age_min) & (age <= age_max)
-        return logT[mask], logL[mask]
+    def restrict(logT, logL, age):
+        m = (age >= age_min) & (age <= age_max)
+        return logT[m], logL[m]
 
-    def interpolate(code_lo, code_hi, code_target, logT_lo, logT_hi, logL_lo, logL_hi):
-        # Match array sizes
-        n = min(len(logT_lo), len(logT_hi))
-        logT_lo, logT_hi = logT_lo[:n], logT_hi[:n]
-        logL_lo, logL_hi = logL_lo[:n], logL_hi[:n]
+    def interpolate(target, low, high, low_vals, high_vals):
+        if high == low:
+            return low_vals
+        w = (target - low) / (high - low)
+        return low_vals * (1 - w) + high_vals * w
 
-        m_lo = float(code_lo) / 100
-        m_hi = float(code_hi) / 100
-        m_t = float(code_target) / 100
+    def get_curve(path, codes, code):
+        if code in codes:
+            logT, logL, age = load_track(path, code)
+            return restrict(logT, logL, age)
 
-        frac = (m_t - m_lo) / (m_hi - m_lo)
+        idx = np.searchsorted(codes, code)
+        if idx <= 0 or idx >= len(codes):
+            raise ValueError(f"Requested mass code {code} is outside available EEPS range.")
 
-        logT = logT_lo + frac * (logT_hi - logT_lo)
-        logL = logL_lo + frac * (logL_hi - logL_lo)
+        low_c, high_c = codes[idx - 1], codes[idx]
 
+        low_T, low_L = restrict(*load_track(path, low_c))
+        high_T, high_L = restrict(*load_track(path, high_c))
+
+        n = min(len(low_T), len(high_T))
+        low_T, low_L = low_T[:n], low_L[:n]
+        high_T, high_L = high_T[:n], high_L[:n]
+
+        target = float(code)
+        low = float(low_c)
+        high = float(high_c)
+
+        logT = interpolate(target, low, high, low_T, high_T)
+        logL = interpolate(target, low, high, low_L, high_L)
         return logT, logL
 
-    # 5. Compute LOWER curve
-    if min_code in file_codes:
-        logT, logL, age = load_track(min_code)
-        low_T, low_L = restrict_by_age(logT, logL, age)
-    else:
-        idx = next(i for i, c in enumerate(file_codes) if c > min_code)
-        lo, hi = file_codes[idx - 1], file_codes[idx]
+    for feh in feh_list:
+        eep_path = _find_eep_dir(download_dir, feh=float(feh), vcrit=vcrit)
+        print(f"[INFO] Using EEPS directory for [Fe/H]={feh:+.2f}: {eep_path}")
 
-        logT_lo, logL_lo, age_lo = load_track(lo)
-        logT_hi, logL_hi, age_hi = load_track(hi)
+        files = sorted(f for f in os.listdir(eep_path) if f.endswith(".track.eep"))
+        codes = sorted([f[:5] for f in files])
 
-        logT_lo, logL_lo = restrict_by_age(logT_lo, logL_lo, age_lo)
-        logT_hi, logL_hi = restrict_by_age(logT_hi, logL_hi, age_hi)
+        low_T, low_L = get_curve(eep_path, codes, min_code)
+        high_T, high_L = get_curve(eep_path, codes, max_code)
 
-        low_T, low_L = interpolate(lo, hi, min_code, logT_lo, logT_hi, logL_lo, logL_hi)
+        # labels include metallicity so overlay is understandable
+        feh_tag = f"[Fe/H]={float(feh):+.2f}"
+        plt.plot(low_T, low_L, "-", lw=2.5, label=f"{label_low} ({feh_tag})")
+        plt.plot(high_T, high_L, "-", lw=2.5, label=f"{label_high} ({feh_tag})")
 
-    # 6. Compute UPPER curve
-    if max_code in file_codes:
-        logT, logL, age = load_track(max_code)
-        high_T, high_L = restrict_by_age(logT, logL, age)
-    else:
-        idx = next(i for i, c in enumerate(file_codes) if c > max_code)
-        lo, hi = file_codes[idx - 1], file_codes[idx]
+        all_T_accum.append(low_T)
+        all_T_accum.append(high_T)
+        all_L_accum.append(low_L)
+        all_L_accum.append(high_L)
 
-        logT_lo, logL_lo, age_lo = load_track(lo)
-        logT_hi, logL_hi, age_hi = load_track(hi)
+    all_T = np.concatenate(all_T_accum) if all_T_accum else np.array([])
+    all_L = np.concatenate(all_L_accum) if all_L_accum else np.array([])
 
-        logT_lo, logL_lo = restrict_by_age(logT_lo, logL_lo, age_lo)
-        logT_hi, logL_hi = restrict_by_age(logT_hi, logL_hi, age_hi)
+    if all_T.size == 0 or all_L.size == 0:
+        raise RuntimeError("No EEP data plotted; check your mass codes and age range.")
 
-        high_T, high_L = interpolate(lo, hi, max_code, logT_lo, logT_hi, logL_lo, logL_hi)
+    # Low-mass focused bounds across all metallicities
+    pad_T = 0.02 * (all_T.max() - all_T.min())
+    pad_L = 0.08 * (all_L.max() - all_L.min())
 
-    # 7. Plot
-    plt.plot(low_T, low_L, '-', linewidth=2, label=label_lower)
-    plt.plot(high_T, high_L, '-', linewidth=2, label=label_upper)
-
-    if fill_region:
-        plt.fill(
-            np.concatenate([low_T, high_T[::-1]]),
-            np.concatenate([low_L, high_L[::-1]]),
-            alpha=0.3
-        )
-
-    print(f"[INFO] Generated EEP curves with {len(low_T)} and {len(high_T)} points.")
+    return {
+        "x": all_T,
+        "y": all_L,
+        "xlim": (all_T.max() + pad_T, all_T.min() - pad_T),  # inverted axis convention handled by limits
+        "ylim": (all_L.min() - pad_L, all_L.max() + pad_L),
+    }

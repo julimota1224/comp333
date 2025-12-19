@@ -4,11 +4,8 @@ import tarfile
 from .config_utils import load_config, ensure_config_dir_exists
 
 
-# Helpers
-
 def _fetch_and_extract(url, local_path):
     print(f"Starting download: {url}")
-
     try:
         response = requests.get(url, stream=True)
         response.raise_for_status()
@@ -32,62 +29,26 @@ def _fetch_and_extract(url, local_path):
         return False
 
 
-def _execute_download(config, filename, local_path):
-    base_url = config.get("MIST_BASE_URL")
-    url = f"{base_url}{filename}"
-    return _fetch_and_extract(url, local_path)
-
-
-# Public API
-
 def download_isochrone(vcrit=None):
     """
-    Download a MIST Isochrone archive using numeric vcrit.
-
-    Parameters
-    ----------
-    vcrit : float
-        Stellar rotation fraction (e.g. 0.0 or 0.4)
-
-    Interactive (menu-based) mode is DISABLED.
+    vcrit : float (0.0 or 0.4)
     """
+    if vcrit is None or not isinstance(vcrit, (int, float)):
+        raise ValueError("download_isochrone(vcrit=...) requires numeric vcrit (e.g., 0.0 or 0.4).")
 
-    # Validate input
-    if vcrit is None:
-        raise RuntimeError(
-            "download_isochrone() requires numeric vcrit in run_config.json."
-        )
-
-    if not isinstance(vcrit, (int, float)):
-        raise ValueError("vcrit must be numeric (e.g., 0.0 or 0.4).")
-
-    # Load system configuration
     config = load_config()
-    download_dir = config.get("DOWNLOAD_DIR")
+    ensure_config_dir_exists(config)
+    download_dir = config["DOWNLOAD_DIR"]
 
-    if not ensure_config_dir_exists(config):
-        raise RuntimeError("Download directory could not be created.")
-
-    # Construct filename
     vvcrit = f"{float(vcrit):.1f}"
     filename = f"MIST_v1.2_vvcrit{vvcrit}_UBVRIplus.txz"
     local_path = os.path.join(download_dir, filename)
-    base_name = filename.replace(".txz", "")
 
-    # Skip if already extracted
-    try:
-        already_exists = any(
-            f.startswith(base_name) for f in os.listdir(download_dir)
-        )
-    except FileNotFoundError:
-        already_exists = False
-
-    if already_exists:
-        print(
-            f"Required isochrone directory already exists → skipping {filename}\n"
-        )
+    base_name = filename.rsplit(".", 1)[0]
+    if any(name.startswith(base_name) for name in os.listdir(download_dir)):
+        print(f"Already exists → skipping {filename}\n")
         return
 
-    # Download and extract
+    url = f"{config['MIST_BASE_URL']}{filename}"
     print(f"Downloading Isochrone: {filename}")
-    _execute_download(config, filename, local_path)
+    return _fetch_and_extract(url, local_path)
